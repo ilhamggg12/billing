@@ -1,0 +1,2820 @@
+<%- include('partials/header', { title: 'Pengaturan', activePage: 'settings' }) %>
+
+<!-- Header Section with Quick Save Button -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="fw-bold mb-1">Pengaturan</h4>
+        <p class="text-muted mb-0">Konfigurasi lengkap sistem ISP Manager</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" form="settingsForm" class="btn btn-primary shadow-sm px-4">
+            <i class="fas fa-save me-2"></i>Simpan Pengaturan
+        </button>
+    </div>
+</div>
+
+<!-- Responsive Nav Pills -->
+<ul class="nav nav-pills settings-nav-pills" id="settingsTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-general-btn" data-bs-toggle="pill" data-bs-target="#tab-general" type="button" role="tab" aria-controls="tab-general" aria-selected="true">
+            <i class="fas fa-building me-2"></i>Umum & Perusahaan
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-admin-account-btn" data-bs-toggle="pill" data-bs-target="#tab-admin-account" type="button" role="tab" aria-controls="tab-admin-account" aria-selected="false">
+            <i class="fas fa-user-shield me-2"></i>Akun & Sandi Admin
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-technicians-btn" data-bs-toggle="pill" data-bs-target="#tab-technicians" type="button" role="tab" aria-controls="tab-technicians" aria-selected="false">
+            <i class="fas fa-user-cog me-2"></i>Akun & WA Teknisi
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-payment-btn" data-bs-toggle="pill" data-bs-target="#tab-payment" type="button" role="tab" aria-controls="tab-payment" aria-selected="false">
+            <i class="fas fa-wallet me-2"></i>Metode Pembayaran
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-billing-btn" data-bs-toggle="pill" data-bs-target="#tab-billing" type="button" role="tab" aria-controls="tab-billing" aria-selected="false">
+            <i class="fas fa-bell me-2"></i>Penagihan & Pesan WA
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-whatsapp-btn" data-bs-toggle="pill" data-bs-target="#tab-whatsapp" type="button" role="tab" aria-controls="tab-whatsapp" aria-selected="false">
+            <i class="fab fa-whatsapp me-2"></i>WhatsApp Gateway
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-integration-btn" data-bs-toggle="pill" data-bs-target="#tab-integration" type="button" role="tab" aria-controls="tab-integration" aria-selected="false">
+            <i class="fas fa-network-wired me-2"></i>Integrasi Router & ACS
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-database-services-btn" data-bs-toggle="pill" data-bs-target="#tab-database-services" type="button" role="tab" aria-controls="tab-database-services" aria-selected="false">
+            <i class="fas fa-server me-2"></i>Database & Services
+        </button>
+    </li>
+</ul>
+
+<!-- Main Settings Form -->
+<form action="/settings" method="POST" id="settingsForm">
+    <div class="tab-content" id="settingsTabContent">
+
+        <!-- ================================================================== -->
+        <!-- TAB 1: UMUM & PERUSAHAAN -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade show active settings-tab-pane" id="tab-general" role="tabpanel" aria-labelledby="tab-general-btn">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <!-- Informasi Perusahaan -->
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-building text-primary me-2"></i>Informasi Perusahaan / ISP
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Informasi ini akan dicetak pada kop faktur invoice dan pesan tagihan.</p>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label for="company_name" class="form-label fw-semibold">Nama Perusahaan</label>
+                                    <input type="text" class="form-control" id="company_name" name="company_name"
+                                           value="<%= settings.company_name || '' %>" placeholder="PT. ISP Nusantara">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="company_phone" class="form-label fw-semibold">No. Telepon / CS</label>
+                                    <input type="text" class="form-control" id="company_phone" name="company_phone"
+                                           value="<%= settings.company_phone || '' %>" placeholder="021-xxxxxxx / 0812xxxx">
+                                </div>
+                                <div class="col-12">
+                                    <label for="admin_otp_phone" class="form-label fw-semibold">
+                                        <i class="fab fa-whatsapp text-success me-1"></i>No. WhatsApp Admin (OTP & Verifikasi Keamanan)
+                                    </label>
+                                    <input type="text" class="form-control font-monospace" id="admin_otp_phone" name="admin_otp_phone"
+                                           value="<%= settings.admin_otp_phone || settings.psb_admin_phone || '082240087489' %>" placeholder="Contoh: 082240087489">
+                                    <div class="form-text text-muted small">
+                                        Nomor WhatsApp tujuan untuk pengiriman kode verifikasi OTP saat melakukan aksi penting (seperti <strong>Lunasi Semua Tagihan</strong>).
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="company_address" class="form-label fw-semibold">Alamat Kantor</label>
+                                    <textarea class="form-control" id="company_address" name="company_address" rows="3" placeholder="Alamat lengkap kantor operasional..."><%= settings.company_address || '' %></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <!-- Port Web Server -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title fw-bold mb-0 text-dark">
+                                <i class="fas fa-network-wired text-primary me-2"></i>Port Web Server
+                            </h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 font-monospace">
+                                Port: <%= settings.web_port || process.env.PORT || '3000' %>
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Nomor port jaringan HTTP tempat aplikasi ISP Manager mendengarkan koneksi browser.</p>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <label for="web_port" class="form-label fw-semibold">Port Web HTTP</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted font-monospace"><i class="fas fa-globe me-1"></i>http://IP:</span>
+                                        <input type="number" class="form-control font-monospace fw-bold text-primary" id="web_port" name="web_port"
+                                               value="<%= settings.web_port || process.env.PORT || '3000' %>" min="1" max="65535" placeholder="3000" required>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1 mt-2">
+                                        <span class="text-muted small me-1">Pilihan Cepat:</span>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 font-monospace" style="font-size: 0.75rem;" onclick="setWebPortInput(80)">80 (HTTP)</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 font-monospace" style="font-size: 0.75rem;" onclick="setWebPortInput(3000)">3000</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 font-monospace" style="font-size: 0.75rem;" onclick="setWebPortInput(8080)">8080</button>
+                                        <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 font-monospace" style="font-size: 0.75rem;" onclick="setWebPortInput(8888)">8888</button>
+                                    </div>
+                                    <div class="form-text text-muted small mt-2">
+                                        <i class="fas fa-info-circle text-info me-1"></i>Tersimpan di database & file <code>.env</code>. Setelah disimpan, restart server aplikasi agar port baru aktif.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Koordinat Peta -->
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-map-marked-alt text-success me-2"></i>Koordinat Default Peta
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Titik awal dan tingkat perbesaran peta sebaran pelanggan.</p>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="map_center_lat" class="form-label fw-semibold">Center Latitude</label>
+                                    <input type="number" step="0.000001" class="form-control" id="map_center_lat" name="map_center_lat"
+                                           value="<%= settings.map_center_lat || '-6.200000' %>" placeholder="-6.200000">
+                                </div>
+                                <div class="col-12">
+                                    <label for="map_center_lng" class="form-label fw-semibold">Center Longitude</label>
+                                    <input type="number" step="0.000001" class="form-control" id="map_center_lng" name="map_center_lng"
+                                           value="<%= settings.map_center_lng || '106.816666' %>" placeholder="106.816666">
+                                </div>
+                                <div class="col-12">
+                                    <label for="map_zoom" class="form-label fw-semibold">Default Zoom Level (1-18)</label>
+                                    <input type="number" class="form-control" id="map_zoom" name="map_zoom"
+                                           value="<%= settings.map_zoom || '13' %>" min="1" max="18">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Save Bar -->
+            <div class="card shadow-sm border-0 mt-3">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1 text-primary"></i>Simpan perubahan informasi umum perusahaan</span>
+                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB 2: METODE PEMBAYARAN -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-payment" role="tabpanel" aria-labelledby="tab-payment-btn">
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="card-title fw-bold mb-0">
+                        <i class="fas fa-wallet text-success me-2"></i>Metode Pembayaran (Untuk Invoice / Faktur Cetak)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border small text-secondary mb-4">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Informasi rekening dan metode pembayaran di bawah ini akan otomatis ditampilkan pada kolom sebelah kiri bawah faktur saat mencetak invoice pelanggan.
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- 1. Bank Transfer -->
+                        <div class="col-md-6">
+                            <label for="payment_bank_info" class="form-label fw-semibold">
+                                <i class="fas fa-university text-primary me-1"></i>1. Bank Transfer
+                            </label>
+                            <textarea class="form-control font-monospace small" id="payment_bank_info" name="payment_bank_info" rows="3" placeholder="Contoh:&#10;BCA: 1234567890 a.n PT ISP Nusantara&#10;Mandiri: 9876543210 a.n PT ISP Nusantara"><%= settings.payment_bank_info || '' %></textarea>
+                            <div class="form-text">Dapat diisi beberapa rekening bank (satu baris per bank).</div>
+                        </div>
+
+                        <!-- 2. e-Wallet -->
+                        <div class="col-md-6">
+                            <label for="payment_ewallet_info" class="form-label fw-semibold">
+                                <i class="fas fa-mobile-alt text-info me-1"></i>2. e-Wallet (DANA)
+                            </label>
+                            <textarea class="form-control font-monospace small" id="payment_ewallet_info" name="payment_ewallet_info" rows="3" placeholder="Contoh:&#10;DANA:&#10;0822 4008 7489 a.n Nama Pemilik"><%= settings.payment_ewallet_info || '' %></textarea>
+                            <div class="form-text">Nomor akun dompet digital DANA untuk menerima pembayaran.</div>
+                        </div>
+
+                        <!-- 3. QRIS (Upload Barcode & Keterangan) -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-3 border">
+                                <label class="form-label fw-bold mb-2">
+                                    <i class="fas fa-qrcode text-danger me-1"></i>3. QRIS (Kode Barcode Pembayaran)
+                                </label>
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            <label for="payment_qris_info" class="form-label small text-muted fw-semibold">Keterangan / Teks QRIS:</label>
+                                            <input type="text" class="form-control" id="payment_qris_info" name="payment_qris_info" value="<%= settings.payment_qris_info || '' %>" placeholder="Scan QRIS via Mobile Banking atau Semua e-Wallet">
+                                        </div>
+
+                                        <div>
+                                            <label class="form-label small text-muted fw-semibold">Upload Gambar Barcode QRIS:</label>
+                                            <input type="file" class="form-control" id="qris_file_input" accept="image/png, image/jpeg, image/webp">
+                                            <input type="hidden" name="payment_qris_image" id="payment_qris_image" value="<%= settings.payment_qris_image || '' %>">
+                                            <div class="form-text small">Mendukung format PNG, JPG, WEBP. Gambar otomatis dioptimasi untuk kualitas cetak faktur.</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4 text-center">
+                                        <div class="p-3 border rounded bg-white shadow-sm d-flex flex-column align-items-center justify-content-center" style="min-height: 150px;">
+                                            <div id="qrisPreviewContainer">
+                                                <% if (settings.payment_qris_image) { %>
+                                                    <img src="<%= settings.payment_qris_image %>" id="qrisPreviewImg" class="img-fluid rounded border bg-white p-1 mb-2 shadow-sm" style="max-height: 125px; max-width: 125px; object-fit: contain;">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger d-block w-100" id="btnRemoveQris">
+                                                        <i class="fas fa-trash me-1"></i>Hapus QRIS
+                                                    </button>
+                                                <% } else { %>
+                                                    <i class="fas fa-qrcode fa-3x text-muted mb-2 opacity-50"></i>
+                                                    <small class="text-muted d-block">Belum ada barcode QRIS</small>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Save Bar -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1 text-success"></i>Perubahan metode pembayaran langsung diterapkan pada faktur cetak</span>
+                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB 3: PENAGIHAN & PESAN WA -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-billing" role="tabpanel" aria-labelledby="tab-billing-btn">
+            <div class="row g-3">
+                <!-- Left: Form Templates & Schedule -->
+                <div class="col-lg-8">
+                    <!-- Jadwal & Isolir Otomatis -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-calendar-check text-primary me-2"></i>Jadwal Penagihan & Isolir Otomatis
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-6">
+                                    <div class="p-3 bg-light rounded border h-100">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" id="auto_billing_enabled" name="auto_billing_enabled"
+                                                   value="true" <%= settings.auto_billing_enabled === 'true' || settings.auto_billing_enabled === '1' ? 'checked' : '' %>>
+                                            <label class="form-check-label fw-bold text-dark" for="auto_billing_enabled">
+                                                <i class="fab fa-whatsapp text-success me-1"></i>Kirim WA Otomatis
+                                            </label>
+                                        </div>
+                                        <small class="text-muted d-block">Kirim pesan tagihan otomatis sesuai jadwal tanggal di bawah (pukul 00:01 WIB).</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="p-3 bg-light rounded border h-100">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" id="auto_block_enabled" name="auto_block_enabled"
+                                                   value="true" <%= settings.auto_block_enabled !== 'false' ? 'checked' : '' %>>
+                                            <label class="form-check-label fw-bold text-danger" for="auto_block_enabled">
+                                                <i class="fas fa-ban me-1"></i>Isolir MikroTik Otomatis
+                                            </label>
+                                        </div>
+                                        <small class="text-muted d-block">IP pelanggan belum bayar otomatis masuk address-list isolir saat jatuh tempo.</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-3 bg-light rounded border">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" id="auto_reset_additional_bill" name="auto_reset_additional_bill"
+                                                   value="true" <%= settings.auto_reset_additional_bill !== 'false' ? 'checked' : '' %>>
+                                            <label class="form-check-label fw-bold text-dark" for="auto_reset_additional_bill">
+                                                <i class="fas fa-undo-alt text-primary me-1"></i>Kosongkan Tagihan Tambahan Saat Lunas (Default Global)
+                                            </label>
+                                        </div>
+                                        <small class="text-muted d-block">Jika diaktifkan, kolom tagihan tambahan pelanggan secara default akan otomatis kembali kosong (Rp 0) disaat tagihan internet dilunasi. Anda juga bisa mengaturnya per pelanggan di modal Tagihan Tambahan.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3 Kartu Jadwal Tanggal 1, 5, 7 -->
+                            <div class="p-3 bg-light rounded border mb-3">
+                                <h6 class="fw-bold mb-2 text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                                    <i class="fas fa-clock text-primary me-1"></i>Jadwal Pengiriman Pesan Tagihan (00:01 WIB)
+                                </h6>
+                                <div class="row g-2">
+                                    <div class="col-sm-4">
+                                        <div class="card border-primary h-100 bg-white shadow-none">
+                                            <div class="card-body p-2">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="reminder_day_1" name="reminder_day_1"
+                                                           value="true" <%= settings.reminder_day_1 !== 'false' ? 'checked' : '' %>>
+                                                    <label class="form-check-label fw-bold text-primary small" for="reminder_day_1">
+                                                        Tanggal 1
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">Tagihan awal bulan periode baru.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card border-info h-100 bg-white shadow-none">
+                                            <div class="card-body p-2">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="reminder_day_5" name="reminder_day_5"
+                                                           value="true" <%= settings.reminder_day_5 !== 'false' ? 'checked' : '' %>>
+                                                    <label class="form-check-label fw-bold text-info small" for="reminder_day_5">
+                                                        Tanggal 5
+                                                    </label>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">Pengingat kedua pelanggan belum bayar.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="card border-danger h-100 bg-white shadow-none">
+                                            <div class="card-body p-2">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="reminder_day_7" name="reminder_day_7"
+                                                           value="true" <%= settings.reminder_day_7 !== 'false' ? 'checked' : '' %>>
+                                                    <label class="form-check-label fw-bold text-danger small" for="reminder_day_7">
+                                                        Tanggal 7 (H-1)
+                                                    </label>
+                                                </div>
+                                                <small class="text-danger d-block mt-1" style="font-size: 0.72rem;">Peringatan keras besok jatuh tempo.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-0">
+                                <label for="isolir_address_list" class="form-label fw-semibold">Nama Address List Isolir (MikroTik)</label>
+                                <input type="text" class="form-control" id="isolir_address_list" name="isolir_address_list"
+                                       value="<%= settings.isolir_address_list || 'ISOLIR' %>" placeholder="ISOLIR">
+                                <div class="form-text small">Nama address-list firewall di MikroTik yang digunakan untuk mengisolir pelanggan (misal: ISOLIR).</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Template Pesan WhatsApp -->
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-comment-dots text-success me-2"></i>Template Pesan WhatsApp
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Template 1: Pesan Reguler (Tgl 1 & 5) -->
+                            <div class="mb-3">
+                                <label for="billing_message_template" class="form-label fw-semibold text-primary">
+                                    <i class="fas fa-envelope me-1"></i>Template Pesan Tagihan Reguler (Tanggal 1 & 5)
+                                </label>
+                                <textarea class="form-control font-monospace small" id="billing_message_template" name="billing_message_template" rows="4"><%= settings.billing_message_template || 'Yth. {customer_name},\n\nTagihan internet Anda untuk periode {period} sebesar Rp {amount} akan jatuh tempo pada tanggal {due_date}.\n\nSilakan lakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan.\n\nTerima kasih,\n{company_name}' %></textarea>
+                            </div>
+
+                            <!-- Template 2: Peringatan H-1 (Tgl 7) -->
+                            <div class="mb-3">
+                                <label for="due_date_warning_template" class="form-label fw-semibold text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>Template Pesan Peringatan Tanggal 7 (Besok Tanggal 8 Jatuh Tempo)
+                                </label>
+                                <textarea class="form-control font-monospace small border-danger" id="due_date_warning_template" name="due_date_warning_template" rows="4"><%= settings.due_date_warning_template || 'Yth. {customer_name},\n\n*PERINGATAN JATUH TEMPO BESOK (TANGGAL 8)*\n\nTagihan internet Anda untuk periode {period} sebesar Rp {amount} akan jatuh tempo besok pada tanggal 8.\n\nMohon segera melakukan pembayaran hari ini untuk menghindari pemutusan / isolir layanan internet otomatis pada tanggal 8.\n\nTerima kasih,\n{company_name}' %></textarea>
+                            </div>
+
+                            <!-- Template 3: Bukti Bayar / Terima Kasih -->
+                            <div class="mb-3">
+                                <label for="payment_receipt_template" class="form-label fw-semibold text-success">
+                                    <i class="fas fa-receipt me-1"></i>Template Bukti Pembayaran / Lunas (Otomatis Saat Tagihan Lunas)
+                                </label>
+                                <textarea class="form-control font-monospace small border-success" id="payment_receipt_template" name="payment_receipt_template" rows="5"><%= settings.payment_receipt_template || 'Yth. {customer_name},\n\nTerima kasih, pembayaran tagihan internet Anda telah berhasil kami terima:\n\n*No. Invoice:* {invoice_number}\n*Periode:* {period}\n*Jumlah:* Rp {amount}\n*Metode:* {payment_method}\n*Tanggal:* {payment_date}\n*Status:* LUNAS\n\nLayanan internet Anda tetap aktif. Terima kasih atas kerja sama dan kepercayaan Anda.\n\nSalam,\n{company_name}' %></textarea>
+                            </div>
+
+                            <!-- Template 4: Pesan Selamat Bergabung (Pelanggan Baru Didaftarkan) -->
+                            <div class="pt-3 border-top">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label for="welcome_message_template" class="form-label fw-semibold text-primary mb-0">
+                                        <i class="fas fa-user-plus text-primary me-1"></i>Template Pesan Selamat Bergabung (Pelanggan Baru)
+                                    </label>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="welcome_wa_enabled" name="welcome_wa_enabled" value="true"
+                                               <%= settings.welcome_wa_enabled !== 'false' ? 'checked' : '' %>>
+                                        <label class="form-check-label small fw-semibold text-dark" for="welcome_wa_enabled">
+                                            Kirim Otomatis ke Pelanggan Baru
+                                        </label>
+                                    </div>
+                                </div>
+                                <p class="text-muted small mb-2">Pesan ini akan dikirimkan otomatis ke nomor WhatsApp pelanggan baru begitu berhasil didaftarkan di sistem.</p>
+                                <textarea class="form-control font-monospace small border-primary" id="welcome_message_template" name="welcome_message_template" rows="8"><%= settings.welcome_message_template || 'Yth. {customer_name},\n\nSelamat bergabung bersama {company_name}! 🎉\nLayanan internet Anda telah aktif dengan rincian sebagai berikut:\n\n*ID Pelanggan:* {customer_id}\n*Nama:* {customer_name}\n*Paket Internet:* {package_name} ({package_speed})\n*Biaya Langganan:* Rp {package_price}/bulan\n*Jatuh Tempo Pembayaran:* {due_date}\n\n*Informasi Akun:* \nUsername: {pppoe_username}\nPassword: {pppoe_password}\n\nSimpan pesan ini dan nomor ID Pelanggan Anda untuk mempermudah pengecekan tagihan serta layanan bantuan.\n\nBantuan Layanan Pelanggan: {company_phone}\n\nTerima kasih telah mempercayakan kebutuhan internet Anda kepada {company_name}!' %></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Kartu Referensi Kode Template (Sticky) -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 sticky-top" style="top: 85px; z-index: 1000;">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+                            <h6 class="card-title fw-bold mb-0 text-white" style="font-size: 0.9rem;">
+                                <i class="fas fa-tags text-warning me-2"></i>Kode Referensi Template
+                            </h6>
+                            <span class="badge bg-warning text-dark"><i class="fas fa-mouse-pointer me-1"></i>Klik utk Salin</span>
+                        </div>
+                        <div class="card-body p-3" style="max-height: calc(100vh - 160px); overflow-y: auto;">
+                            <p class="small text-muted mb-3" style="font-size: 0.76rem;">
+                                Klik tag kode di bawah untuk menyalin langsung ke clipboard, lalu tempelkan (*paste*) ke dalam template pesan:
+                            </p>
+
+                            <!-- Kategori: Data Pelanggan -->
+                            <div class="mb-3">
+                                <div class="fw-bold small text-primary mb-1 border-bottom pb-1" style="font-size: 0.78rem;">
+                                    <i class="fas fa-user me-1"></i>Data Pelanggan
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{customer_name}" title="Nama lengkap">{customer_name}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{customer_id}" title="ID Pelanggan">{customer_id}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{customer_phone}" title="No Telepon">{customer_phone}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{customer_address}" title="Alamat">{customer_address}</button>
+                                </div>
+                            </div>
+
+                            <!-- Kategori: Paket & Layanan -->
+                            <div class="mb-3">
+                                <div class="fw-bold small text-success mb-1 border-bottom pb-1" style="font-size: 0.78rem;">
+                                    <i class="fas fa-wifi me-1"></i>Paket & Layanan
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 font-monospace copy-ref-btn fw-bold" data-tag="{paket_internet}" title="Nama paket">{paket_internet}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{kecepatan}" title="Kecepatan">{kecepatan}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{package_price}" title="Harga Paket">{package_price}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{pppoe_username}" title="Username PPPoE">{pppoe_username}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{pppoe_password}" title="Password PPPoE">{pppoe_password}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{ip_address}" title="IP Address">{ip_address}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{installation_date}" title="Tgl Pemasangan">{installation_date}</button>
+                                </div>
+                            </div>
+
+                            <!-- Kategori: Tagihan & Pembayaran -->
+                            <div class="mb-3">
+                                <div class="fw-bold small text-warning mb-1 border-bottom pb-1" style="font-size: 0.78rem;">
+                                    <i class="fas fa-file-invoice-dollar me-1"></i>Tagihan & Pembayaran
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{invoice_number}" title="No. Invoice">{invoice_number}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{period}" title="Periode (YYYY-MM)">{period}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{amount}" title="Nominal Rp">{amount}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{due_date}" title="Jatuh tempo">{due_date}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{due_time}" title="Jam jatuh tempo (23:59 WIB)">{due_time}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{payment_method}" title="Metode bayar">{payment_method}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{payment_date}" title="Tanggal bayar">{payment_date}</button>
+                                </div>
+                            </div>
+
+                            <!-- Kategori: Perusahaan -->
+                            <div>
+                                <div class="fw-bold small text-info mb-1 border-bottom pb-1" style="font-size: 0.78rem;">
+                                    <i class="fas fa-building me-1"></i>Perusahaan / ISP
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{company_name}" title="Nama ISP">{company_name}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{company_phone}" title="No CS">{company_phone}</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace copy-ref-btn" data-tag="{company_address}" title="Alamat kantor">{company_address}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Save Bar -->
+            <div class="card shadow-sm border-0 mt-3">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1 text-primary"></i>Simpan konfigurasi jadwal dan template pesan WhatsApp</span>
+                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB 4: WHATSAPP GATEWAY -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-whatsapp" role="tabpanel" aria-labelledby="tab-whatsapp-btn">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-7">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fab fa-whatsapp text-success me-2 fs-5"></i>WhatsApp Gateway Scanner
+                            </h6>
+                            <%
+                                const waStatusVal = (typeof whatsappStatus !== 'undefined' ? whatsappStatus : (typeof waStatus !== 'undefined' ? waStatus : 'disconnected'));
+                                const waQRVal = (typeof whatsappQR !== 'undefined' ? whatsappQR : (typeof waQR !== 'undefined' ? waQR : null));
+                            %>
+                            <span class="badge <%= waStatusVal === 'connected' ? 'bg-success' : (waQRVal ? 'bg-warning text-dark' : (waStatusVal === 'connecting' ? 'bg-info text-white' : 'bg-secondary')) %> px-3 py-2" id="waStatusBadge">
+                                <% if (waStatusVal === 'connected') { %>
+                                    <i class="fas fa-check-circle me-1"></i>Terhubung
+                                <% } else if (waQRVal) { %>
+                                    <i class="fas fa-qrcode me-1"></i>Scan QR Code
+                                <% } else if (waStatusVal === 'connecting') { %>
+                                    <span class="spinner-border spinner-border-sm me-1"></span>Menyiapkan...
+                                <% } else { %>
+                                    <i class="fas fa-times-circle me-1"></i>Tidak Terhubung
+                                <% } %>
+                            </span>
+                        </div>
+                        <div class="card-body p-4 text-center">
+                            <!-- Status Alert Box Connected -->
+                            <div id="waConnectedArea" class="alert alert-success py-3 mb-4" style="<%= waStatusVal === 'connected' ? '' : 'display:none;' %>">
+                                <i class="fas fa-check-circle fa-2x mb-2 text-success d-block"></i>
+                                <h6 class="fw-bold mb-1">WhatsApp Berhasil Terhubung!</h6>
+                                <p class="small text-secondary mb-0">Layanan pengiriman pesan tagihan otomatis siap digunakan.</p>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div id="waLoadingArea" class="py-4 mb-3" style="<%= (waStatusVal === 'connecting' && !waQRVal) ? '' : 'display:none;' %>">
+                                <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <h6 class="fw-bold mb-1">Sedang Menyiapkan Browser WhatsApp...</h6>
+                                <small class="text-muted">QR Code akan segera muncul dalam beberapa detik</small>
+                            </div>
+
+                            <!-- QR Code Display Area -->
+                            <div id="waQrArea" class="mb-4" style="<%= waQRVal ? '' : 'display:none;' %>">
+                                <div class="alert alert-info py-2 px-3 mb-3 small text-start">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Buka aplikasi <strong>WhatsApp</strong> di HP Anda &rarr; Pilih <strong>Perangkat Tertaut</strong> &rarr; <strong>Tautkan Perangkat</strong>, lalu scan barcode di bawah:
+                                </div>
+
+                                <div class="p-3 bg-white border rounded shadow-sm d-inline-block">
+                                    <img id="waQrImage" src="<%= waQRVal || '' %>" alt="QR Code WhatsApp" class="img-fluid" style="width: 230px; height: 230px; display: block;">
+                                </div>
+
+                                <div class="mt-3">
+                                    <small class="text-muted"><i class="fas fa-sync fa-spin me-1 text-success"></i> Menunggu scan barcode dari HP Anda...</small>
+                                </div>
+                            </div>
+
+                            <!-- Error Alert -->
+                            <div id="waErrorAlert" class="alert alert-danger py-2 small mb-3 text-start" style="display:none;"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success btn-lg shadow-sm" id="waConnectBtn" style="<%= waStatusVal === 'connected' ? 'display:none;' : '' %>">
+                                    <i class="fab fa-whatsapp me-2"></i>Hubungkan WhatsApp (Munculkan QR)
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-lg" id="waDisconnectBtn" style="<%= waStatusVal === 'connected' ? '' : 'display:none;' %>">
+                                    <i class="fas fa-unlink me-2"></i>Putuskan Koneksi WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB 5: INTEGRASI ROUTER & ACS -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-integration" role="tabpanel" aria-labelledby="tab-integration-btn">
+            <div class="row g-3">
+                <!-- MikroTik RouterOS -->
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-network-wired text-warning me-2"></i>Koneksi MikroTik RouterOS
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-primary d-flex justify-content-between align-items-center mb-3 py-2 px-3">
+                                <div>
+                                    <i class="fas fa-server me-2"></i><strong>Multi-Router MikroTik Aktif</strong>
+                                    <div class="small text-muted">Kini Anda dapat menghubungkan lebih dari 1 router MikroTik untuk pembagian pelanggan.</div>
+                                </div>
+                                <a href="/mikrotik" class="btn btn-primary btn-sm ms-2 text-nowrap">
+                                    <i class="fas fa-external-link-alt me-1"></i>Kelola Multi-Router
+                                </a>
+                            </div>
+                            <p class="text-muted small mb-3">Konfigurasi di bawah ini mengatur router default/utama sistem:</p>
+                            <div class="row g-3">
+                                <div class="col-sm-7">
+                                    <label for="mikrotik_host" class="form-label fw-semibold">Host IP Address</label>
+                                    <input type="text" class="form-control" id="mikrotik_host" name="mikrotik_host"
+                                           value="<%= settings.mikrotik_host || '' %>" placeholder="192.168.1.1">
+                                </div>
+                                <div class="col-sm-5">
+                                    <label for="mikrotik_port" class="form-label fw-semibold">API Port</label>
+                                    <input type="number" class="form-control" id="mikrotik_port" name="mikrotik_port"
+                                           value="<%= settings.mikrotik_port || '8728' %>" placeholder="8728">
+                                    <div class="form-text small">Default: 8728</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="mikrotik_username" class="form-label fw-semibold">Username API</label>
+                                    <input type="text" class="form-control" id="mikrotik_username" name="mikrotik_username"
+                                           value="<%= settings.mikrotik_username || '' %>" placeholder="admin">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="mikrotik_password" class="form-label fw-semibold">Password API</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="mikrotik_password" name="mikrotik_password"
+                                               value="<%= settings.mikrotik_password || '' %>">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="mikrotik_password">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GenieACS NBI -->
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-microchip text-info me-2"></i>GenieACS NBI API
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">Integrasi monitoring perangkat modem CPE / ONT pelanggan.</p>
+                            <div class="mb-3">
+                                <label for="genieacs_url" class="form-label fw-semibold">GenieACS NBI URL</label>
+                                <input type="url" class="form-control" id="genieacs_url" name="genieacs_url"
+                                       value="<%= settings.genieacs_url || '' %>" placeholder="http://localhost:7557">
+                                <div class="form-text small">URL API GenieACS NBI (biasanya port 7557).</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Save Bar -->
+            <div class="card shadow-sm border-0 mt-3">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1 text-warning"></i>Simpan kredensial integrasi MikroTik & GenieACS</span>
+                    <button type="submit" class="btn btn-primary px-4"><i class="fas fa-save me-2"></i>Simpan Pengaturan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB 6: DATABASE & SERVICES -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-database-services" role="tabpanel" aria-labelledby="tab-database-services-btn">
+            <%
+                const currentWaStatus = (typeof whatsappStatus !== 'undefined' ? whatsappStatus : (typeof waStatus !== 'undefined' ? waStatus : 'disconnected'));
+                const dbStats = (typeof databaseStats !== 'undefined' && databaseStats) ? databaseStats : { size: '0 B', counts: {} };
+                const sysInfo = (typeof systemInfo !== 'undefined' && systemInfo) ? systemInfo : { nodeVersion: process.version, platform: '', uptime: '', memory: { rss: '-', heapUsed: '-', heapTotal: '-' } };
+                const schedStat = (typeof schedulerStatus !== 'undefined' && schedulerStatus) ? schedulerStatus : { active: false, jobsCount: 0 };
+                const mtStat = (typeof mikrotikStatus !== 'undefined' && mikrotikStatus) ? mikrotikStatus : { totalRouters: 0, connectedRouters: 0 };
+                const acsStat = (typeof genieacsStatus !== 'undefined' && genieacsStatus) ? genieacsStatus : { online: false, devicesCount: 0 };
+            %>
+
+            <!-- Overview Ringkasan Database & Runtime Server -->
+            <div class="row g-3 mb-4">
+                <!-- Database Overview -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title fw-bold mb-0 text-primary">
+                                <i class="fas fa-database me-2"></i>Status Database SQLite
+                            </h6>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="fas fa-check-circle me-1"></i>WAL Mode Aktif
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded bg-light mb-3">
+                                <div>
+                                    <div class="text-muted small">Ukuran File Database</div>
+                                    <div class="fs-4 fw-bold text-dark"><%= dbStats.size || '0 B' %></div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted small">Lokasi Database</div>
+                                    <code class="small text-break">database/isp-manager.db</code>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 text-center mb-3">
+                                <div class="col-3">
+                                    <div class="p-2 border rounded bg-white">
+                                        <div class="fw-bold text-primary fs-5"><%= dbStats.counts.customers || 0 %></div>
+                                        <small class="text-muted" style="font-size: 11px;">Pelanggan</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded bg-white">
+                                        <div class="fw-bold text-success fs-5"><%= dbStats.counts.invoices || 0 %></div>
+                                        <small class="text-muted" style="font-size: 11px;">Invoices</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded bg-white">
+                                        <div class="fw-bold text-warning fs-5"><%= dbStats.counts.payments || 0 %></div>
+                                        <small class="text-muted" style="font-size: 11px;">Pembayaran</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded bg-white">
+                                        <div class="fw-bold text-info fs-5"><%= dbStats.counts.activity_log || 0 %></div>
+                                        <small class="text-muted" style="font-size: 11px;">Log Sistem</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <div class="small text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>Optimasi indeks dan kompresi ruang kosong
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="confirmVacuumDatabase()">
+                                    <i class="fas fa-broom me-1 text-primary"></i>Optimalkan (VACUUM)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server & Runtime Info -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title fw-bold mb-0 text-dark">
+                                <i class="fas fa-server text-primary me-2"></i>Informasi Sistem & Server
+                            </h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <%= sysInfo.platform || 'Node.js Server' %>
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <div class="p-3 rounded bg-light h-100">
+                                        <div class="text-muted small mb-1"><i class="fab fa-node-js text-success me-1"></i>Runtime Node.js</div>
+                                        <div class="fw-bold text-dark"><%= sysInfo.nodeVersion %></div>
+                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                            <small class="text-muted">Port Web: <strong class="text-primary font-monospace"><%= settings.web_port || process.env.PORT || '3000' %></strong></small>
+                                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 0.72rem;" onclick="openChangePortModal()">
+                                                <i class="fas fa-edit me-1"></i>Ubah Port
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="p-3 rounded bg-light h-100">
+                                        <div class="text-muted small mb-1"><i class="fas fa-stopwatch text-info me-1"></i>Uptime Aplikasi</div>
+                                        <div class="fw-bold text-dark"><%= sysInfo.uptime %></div>
+                                        <small class="text-muted">Aktif & berjalan stabil</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-3 rounded bg-light">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="text-muted small"><i class="fas fa-memory text-warning me-1"></i>Penggunaan Memori RAM</span>
+                                            <span class="fw-bold small text-dark"><%= sysInfo.memory.heapUsed %> / <%= sysInfo.memory.heapTotal %> (RSS: <%= sysInfo.memory.rss %>)</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- BAGIAN 1: DATABASE (BACKUP DATA) -->
+            <!-- ========================================================== -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h6 class="card-title fw-bold mb-1">
+                                <i class="fas fa-database text-primary me-2"></i>Bagian Database: Backup & Cadangan Data
+                            </h6>
+                            <p class="text-muted small mb-0">Unduh berkas cadangan data untuk arsip pembukuan, pengamanan berkala, atau migrasi ke server baru.</p>
+                        </div>
+                        <span class="badge bg-light text-dark border">
+                            <i class="fas fa-shield-alt text-success me-1"></i>Safe Online Backup
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- 1. Backup Full -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-primary border-opacity-25 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-primary text-white shadow-sm">
+                                            <i class="fas fa-file-shield fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-primary">Full .db</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">1. Backup Database Full</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Mencadangkan seluruh isi database SQLite (<%= dbStats.size %>) dalam format binary <code>.db</code> asli. Lengkap seluruh tabel dan siap di-restore kapan pun.
+                                    </p>
+                                    <a href="/settings/backup/full" class="btn btn-primary w-100 shadow-sm">
+                                        <i class="fas fa-download me-2"></i>Download Full DB
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Backup Pelanggan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-success border-opacity-25 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-success text-white shadow-sm">
+                                            <i class="fas fa-file-excel fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-success"><%= dbStats.counts.customers %> Pelanggan</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">2. Backup Pelanggan Saja</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Ekspor seluruh data pelanggan (<%= dbStats.counts.customers %>) dan paket internet (<%= dbStats.counts.packages %>) ke format Excel (<code>.xlsx</code>) atau <code>.csv</code>.
+                                    </p>
+                                    <div class="d-flex gap-2">
+                                        <a href="/settings/backup/customers?format=excel" class="btn btn-success flex-grow-1 shadow-sm">
+                                            <i class="fas fa-file-excel me-1"></i>Excel (.xlsx)
+                                        </a>
+                                        <a href="/settings/backup/customers?format=csv" class="btn btn-outline-success shadow-sm" title="Download CSV">
+                                            <i class="fas fa-file-csv me-1"></i>CSV
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Backup Laporan / Pemasukan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-warning border-opacity-50 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-warning text-dark shadow-sm">
+                                            <i class="fas fa-file-invoice-dollar fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-warning text-dark"><%= dbStats.counts.payments %> Transaksi</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">3. Backup Laporan & Pemasukan</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Ekspor seluruh riwayat transaksi (<%= dbStats.counts.payments %>) dan rekap invoice (<%= dbStats.counts.invoices %>) ke format Excel (<code>.xlsx</code>) atau <code>.csv</code> untuk pembukuan.
+                                    </p>
+                                    <div class="d-flex gap-2">
+                                        <a href="/settings/backup/reports?format=excel" class="btn btn-warning text-dark flex-grow-1 shadow-sm">
+                                            <i class="fas fa-file-excel me-1"></i>Excel (.xlsx)
+                                        </a>
+                                        <a href="/settings/backup/reports?format=csv" class="btn btn-outline-dark shadow-sm" title="Download CSV">
+                                            <i class="fas fa-file-csv me-1"></i>CSV
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Backup Pengaturan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-info border-opacity-50 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-info text-white shadow-sm">
+                                            <i class="fas fa-sliders-h fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-info"><%= dbStats.counts.settings %> Parameter</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">4. Backup Pengaturan Saja</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Cadangkan seluruh konfigurasi sistem, info ISP, template pesan WhatsApp billing, info bank/QRIS, dan daftar router MikroTik ke format <code>.json</code>.
+                                    </p>
+                                    <a href="/settings/backup/settings" class="btn btn-info text-white w-100 shadow-sm">
+                                        <i class="fas fa-cog me-2"></i>Download Pengaturan (.json)
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- BAGIAN 2: RESTORE: PEMULIHAN DATABASE DARI FILE CADANGAN -->
+            <!-- ========================================================== -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h6 class="card-title fw-bold mb-1 text-danger">
+                                <i class="fas fa-history text-danger me-2"></i>Bagian Restore: Pemulihan Database & Data Sistem
+                            </h6>
+                            <p class="text-muted small mb-0">
+                                Pulihkan data dari berkas cadangan (.db atau .json). Sistem secara otomatis membuat cadangan keselamatan (<i>pre-restore safety backup</i>) sebelum eksekusi.
+                            </p>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+                            <i class="fas fa-shield-virus me-1"></i>Auto Safety Copy
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- 1. Restore Full DB -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-danger border-opacity-25 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-danger text-white shadow-sm">
+                                            <i class="fas fa-cloud-upload-alt fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-danger">Full .db</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">1. Restore Full Database</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Menggantikan seluruh database saat ini dengan berkas <code>.db</code> hasil full backup. Seluruh tabel, akun, invoice, dan data akan dipulihkan utuh.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-danger w-100 shadow-sm" onclick="openRestoreModal('full')">
+                                        <i class="fas fa-upload me-2"></i>Pilih File .db
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Restore Pelanggan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-success border-opacity-25 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-success text-white shadow-sm">
+                                            <i class="fas fa-file-excel fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-success">Excel / CSV</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">2. Restore Data Pelanggan</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Impor dan perbarui data pelanggan dan paket internet dari berkas Excel (<code>.xlsx</code>), <code>.csv</code>, atau <code>.json</code>. Tidak menghapus data invoice atau pembayaran yang ada.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-success w-100 shadow-sm" onclick="openRestoreModal('customers')">
+                                        <i class="fas fa-file-excel me-2"></i>Pilih File Excel / CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Restore Laporan & Pemasukan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-warning border-opacity-50 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-warning text-dark shadow-sm">
+                                            <i class="fas fa-file-invoice-dollar fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-warning text-dark">Excel / CSV</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">3. Restore Laporan & Transaksi</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Impor riwayat faktur tagihan invoice dan catatan pembayaran dari berkas Excel (<code>.xlsx</code>), <code>.csv</code>, atau <code>.json</code> untuk melengkapi atau memulihkan pembukuan.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-warning text-dark w-100 shadow-sm" onclick="openRestoreModal('reports')">
+                                        <i class="fas fa-file-excel me-2"></i>Pilih File Excel / CSV
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Restore Pengaturan Saja -->
+                        <div class="col-md-6 col-xl-3">
+                            <div class="card h-100 border border-info border-opacity-50 shadow-none hover-shadow bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-info text-white shadow-sm">
+                                            <i class="fas fa-sliders-h fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-info">Pengaturan .json</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">4. Restore Pengaturan</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Pulihkan seluruh konfigurasi sistem, info ISP, template pesan WhatsApp billing, info bank/QRIS, serta router MikroTik dari berkas <code>.json</code>.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-info w-100 shadow-sm" onclick="openRestoreModal('settings')">
+                                        <i class="fas fa-cog me-2"></i>Pilih File .json
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- BAGIAN 3: RESET / PENGOSONGAN DATABASE (ZONA BAHAYA) -->
+            <!-- ========================================================== -->
+            <div class="card shadow-sm border-0 border-start border-danger border-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h6 class="card-title fw-bold mb-1 text-danger">
+                                <i class="fas fa-trash-alt text-danger me-2"></i>Bagian Reset: Pengosongan Database (Zona Bahaya)
+                            </h6>
+                            <p class="text-muted small mb-0">
+                                Bersihkan atau kosongkan tabel database. Sistem <strong>otomatis membuat berkas cadangan keselamatan (<i>safety backup</i>)</strong> sebelum eksekusi dimulai.
+                            </p>
+                        </div>
+                        <span class="badge bg-danger text-white px-3 py-2 shadow-sm">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Tindakan Permanen
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Opsi 1: Kosongkan Pelanggan & Tagihan -->
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card h-100 border border-warning border-opacity-75 shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-warning text-dark shadow-sm">
+                                            <i class="fas fa-user-slash fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-warning text-dark">Data Operasional</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">1. Kosongkan Pelanggan & Tagihan</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Menghapus seluruh data pelanggan, tagihan invoice, dan pembayaran. <strong>Akun admin, info perusahaan, template WA, dan router MikroTik tetap aman.</strong>
+                                    </p>
+                                    <button type="button" class="btn btn-outline-warning text-dark w-100 fw-semibold shadow-sm" onclick="openResetModal('operational')">
+                                        <i class="fas fa-eraser me-2"></i>Kosongkan Pelanggan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opsi 2: Bersihkan Log Aktivitas -->
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card h-100 border border-info border-opacity-75 shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-info text-white shadow-sm">
+                                            <i class="fas fa-clipboard-list fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-info">Log Sistem</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">2. Bersihkan Log Aktivitas</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Membersihkan seluruh riwayat catatan audit trail sistem (<%= dbStats.counts.activity_log || 0 %> log) untuk mempercepat performa tanpa menyentuh data lainnya.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-info w-100 fw-semibold shadow-sm" onclick="openResetModal('logs')">
+                                        <i class="fas fa-broom me-2"></i>Bersihkan Riwayat Log
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opsi 3: Factory Reset Database -->
+                        <div class="col-md-12 col-xl-4">
+                            <div class="card h-100 border border-danger shadow-none bg-danger-subtle bg-opacity-25">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="p-2 rounded-3 bg-danger text-white shadow-sm">
+                                            <i class="fas fa-radiation-alt fa-lg"></i>
+                                        </div>
+                                        <span class="badge bg-danger">Setelan Pabrik</span>
+                                    </div>
+                                    <h6 class="fw-bold text-danger mb-1">3. Factory Reset Total</h6>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Mengosongkan seluruh tabel database dan mengembalikan sistem ke kondisi pertama kali dipasang (Akun awal: <code>admin</code> / <code>admin123</code>).
+                                    </p>
+                                    <button type="button" class="btn btn-danger w-100 fw-semibold shadow-sm" onclick="openResetModal('factory')">
+                                        <i class="fas fa-skull-crossbones me-2"></i>Factory Reset Penuh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- BAGIAN 4: SERVICES (RESTART & MONITORING) -->
+            <!-- ========================================================== -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div>
+                            <h6 class="card-title fw-bold mb-1">
+                                <i class="fas fa-cogs text-danger me-2"></i>Bagian Services: Manajemen & Mulai Ulang Layanan
+                            </h6>
+                            <p class="text-muted small mb-0">
+                                Mulai ulang modul latar belakang jika terjadi kendala koneksi socket, session WhatsApp tersangkut, atau kendala API.
+                            </p>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-danger shadow-sm px-3 fw-semibold" onclick="confirmRestartService('all')">
+                                <i class="fas fa-sync-alt me-2"></i>1. Restart Semua Services
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Service 1: WhatsApp Services -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fab fa-whatsapp fa-2x text-success"></i>
+                                            <span class="fw-bold">WhatsApp Gateway</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <% if (currentWaStatus === 'connected') { %>
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Online / Terhubung</span>
+                                        <% } else if (currentWaStatus === 'connecting') { %>
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-spinner fa-spin me-1"></i>Menghubungkan...</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><i class="fas fa-times-circle me-1"></i>Offline / Terputus</span>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Gateway notifikasi tagihan jatuh tempo, kwitansi pembayaran, dan broadcast via WhatsApp Web.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-success btn-sm w-100" onclick="confirmRestartService('whatsapp')">
+                                        <i class="fas fa-redo me-1"></i>2. Restart WhatsApp Service
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service 2: Auto-Billing Scheduler -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fas fa-clock fa-2x text-primary"></i>
+                                            <span class="fw-bold">Billing Scheduler</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <% if (schedStat && schedStat.active) { %>
+                                            <span class="badge bg-primary"><i class="fas fa-play-circle me-1"></i>Aktif (00:01 WIB)</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><i class="fas fa-pause-circle me-1"></i>Tidak Aktif</span>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Cron penjadwal otomatis pengecekan tagihan setiap jam 00:01 WIB & auto-isolir tanggal 8 jam 23:59.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="confirmRestartService('scheduler')">
+                                        <i class="fas fa-redo me-1"></i>Restart Scheduler
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service 3: MikroTik RouterOS API -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fas fa-network-wired fa-2x text-warning"></i>
+                                            <span class="fw-bold">MikroTik Router API</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <% if (mtStat && mtStat.connectedRouters > 0) { %>
+                                            <span class="badge bg-success"><i class="fas fa-check me-1"></i><%= mtStat.connectedRouters %>/<%= mtStat.totalRouters %> Terhubung</span>
+                                        <% } else if (mtStat && mtStat.totalRouters > 0) { %>
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i><%= mtStat.totalRouters %> Router Terdaftar</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><i class="fas fa-circle me-1"></i>Belum Dikonfigurasi</span>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Koneksi soket API RouterOS (port 8728) untuk sinkronisasi secret PPPoE dan address-list firewall isolir.
+                                    </p>
+                                    <button type="button" class="btn btn-outline-warning text-dark btn-sm w-100" onclick="confirmRestartService('mikrotik')">
+                                        <i class="fas fa-redo me-1"></i>Segarkan Koneksi Router
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service 4: GenieACS TR-069 NBI -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border shadow-none bg-light">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fas fa-microchip fa-2x text-info"></i>
+                                            <span class="fw-bold">GenieACS TR-069</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <% if (acsStat && acsStat.online) { %>
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Online (<%= acsStat.devicesCount %> ONT)</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><i class="fas fa-times-circle me-1"></i>Server Offline</span>
+                                        <% } %>
+                                    </div>
+                                    <p class="text-muted small flex-grow-1 mb-3">
+                                        Koneksi REST API NBI ke GenieACS (port 7557) untuk remote ONT modem (ganti SSID/Wi-Fi, reboot ONT).
+                                    </p>
+                                    <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="confirmRestartService('genieacs')">
+                                        <i class="fas fa-redo me-1"></i>Segarkan GenieACS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB: AKUN LOGIN & NOMOR WHATSAPP TEKNISI -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-technicians" role="tabpanel" aria-labelledby="tab-technicians-btn">
+            <%
+                const techList = typeof technicians !== 'undefined' && Array.isArray(technicians) ? technicians : [];
+            %>
+            <div class="row g-3">
+                <!-- Kolom Kiri: Form Tambah Teknisi Baru -->
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-user-plus text-primary me-2"></i>Tambah Akun & Nomor WA Teknisi
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info py-2 px-3 small mb-3">
+                                <i class="fab fa-whatsapp text-success me-1"></i>
+                                Nomor WhatsApp yang diinput di sini akan menerima notifikasi <strong>Tiket Gangguan</strong> dan <strong>Tiket PSB</strong> secara otomatis. Teknisi dapat login melalui halaman <code>/teknisi</code>.
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nama Lengkap Teknisi <span class="text-danger">*</span></label>
+                                <input type="text" name="name" form="addTechForm" class="form-control" placeholder="Contoh: Kang Asep" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nomor WhatsApp Teknisi <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white"><i class="fab fa-whatsapp"></i></span>
+                                    <input type="text" name="phone" form="addTechForm" class="form-control" placeholder="Contoh: 085179994008" required>
+                                </div>
+                                <small class="text-muted" style="font-size: 0.74rem;">Gunakan format 08xxxx atau 628xxxx.</small>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-semibold">Username Login <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="fas fa-user"></i></span>
+                                        <input type="text" name="username" form="addTechForm" class="form-control" placeholder="Contoh: asep" autocomplete="off" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label fw-semibold">Password Login <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" name="password" id="newTechPassword" form="addTechForm" class="form-control" placeholder="Password login" autocomplete="new-password" required>
+                                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="newTechPassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Jabatan / Spesialisasi</label>
+                                <input type="text" name="role" form="addTechForm" class="form-control" value="Teknisi Lapangan / Splicer" placeholder="Teknisi Lapangan">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Catatan / Area Tugas (Opsional)</label>
+                                <input type="text" name="notes" form="addTechForm" class="form-control" placeholder="Contoh: Area Solokanjeruk & Majalaya">
+                            </div>
+
+                            <button type="submit" form="addTechForm" class="btn btn-primary fw-bold w-100 py-2">
+                                <i class="fas fa-save me-2"></i>Tambah & Simpan Akun Teknisi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Tabel Daftar Akun & Nomor WA Teknisi -->
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="card-title fw-bold mb-0">
+                                    <i class="fas fa-users-cog text-warning me-2"></i>Daftar Nomor WhatsApp & Akun Login Teknisi (<%= techList.length %>)
+                                </h6>
+                                <small class="text-muted">Kelola nomor penerima laporan WA gangguan/PSB serta user & password login Portal Teknisi</small>
+                            </div>
+                            <a href="/teknisi" target="_blank" class="btn btn-sm btn-outline-warning text-dark fw-semibold">
+                                <i class="fas fa-external-link-alt me-1"></i>Halaman Login Teknisi (/teknisi)
+                            </a>
+                        </div>
+                        <div class="card-body p-0">
+                            <% if (techList.length === 0) { %>
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-user-cog fa-3x opacity-25 mb-2 d-block"></i>
+                                    Belum ada data teknisi terdaftar. Silakan tambahkan pada form di samping.
+                                </div>
+                            <% } else { %>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3">Nama Teknisi</th>
+                                                <th>Nomor WhatsApp</th>
+                                                <th>Username Login</th>
+                                                <th>Status</th>
+                                                <th class="text-end pe-3">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% techList.forEach(tech => { %>
+                                            <tr>
+                                                <td class="ps-3">
+                                                    <div class="fw-bold text-dark"><%= tech.name %></div>
+                                                    <small class="text-muted"><%= tech.role || 'Teknisi Lapangan' %></small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">
+                                                        <i class="fab fa-whatsapp me-1"></i><%= tech.phone %>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <code><%= tech.username || '-' %></code>
+                                                </td>
+                                                <td>
+                                                    <% if (tech.is_active) { %>
+                                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Aktif</span>
+                                                    <% } else { %>
+                                                        <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Nonaktif</span>
+                                                    <% } %>
+                                                </td>
+                                                <td class="text-end pe-3">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-outline-primary"
+                                                                title="Edit Nomor WA / Username / Ganti Password"
+                                                                data-id="<%= tech.id %>"
+                                                                data-name="<%= tech.name %>"
+                                                                data-phone="<%= tech.phone %>"
+                                                                data-username="<%= tech.username || '' %>"
+                                                                data-role="<%= tech.role || 'Teknisi Lapangan' %>"
+                                                                data-notes="<%= tech.notes || '' %>"
+                                                                data-active="<%= tech.is_active ? '1' : '0' %>"
+                                                                onclick="openEditTechModal(this)">
+                                                            <i class="fas fa-edit me-1"></i>Edit / Password
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-<%= tech.is_active ? 'warning' : 'success' %>"
+                                                                title="<%= tech.is_active ? 'Nonaktifkan Teknisi' : 'Aktifkan Teknisi' %>"
+                                                                onclick="submitTechToggle(<%= tech.id %>)">
+                                                            <i class="fas fa-power-off"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger"
+                                                                title="Hapus Teknisi"
+                                                                onclick="submitTechDelete(<%= tech.id %>, '<%= tech.name.replace(/'/g, "\\'") %>')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- TAB: AKUN & KREDENSIAL LOGIN ADMINISTRATOR -->
+        <!-- ================================================================== -->
+        <div class="tab-pane fade settings-tab-pane" id="tab-admin-account" role="tabpanel" aria-labelledby="tab-admin-account-btn">
+            <%
+                const adminList = typeof adminUsers !== 'undefined' && Array.isArray(adminUsers) ? adminUsers : [];
+                const currentAdmin = (typeof user !== 'undefined' && user) ? user : (adminList[0] || { id: 1, name: 'Administrator', username: 'admin' });
+            %>
+            <div class="alert alert-primary border-primary d-flex align-items-center gap-3 py-3 px-4 mb-4 rounded-3 shadow-xs">
+                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="fas fa-user-shield fa-lg"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1 text-primary">Pengaturan Kredensial Login Administrator</h6>
+                    <div class="text-muted small">
+                        Kelola nama, username login, dan kata sandi Administrator untuk masuk ke sistem LJN Billing. Anda dapat memperbarui username, mengganti kata sandi baru, atau mereset kata sandi kembali ke bawaan awal (<code>admin123</code>).
+                    </div>
+                </div>
+                <a href="/login-admin" target="_blank" class="btn btn-sm btn-outline-primary fw-bold text-nowrap d-none d-md-inline-flex align-items-center">
+                    <i class="fas fa-external-link-alt me-1"></i>Halaman Login Admin
+                </a>
+            </div>
+
+            <div class="row g-3">
+                <!-- Kolom Kiri: Form Ganti Username & Kata Sandi Admin -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title fw-bold mb-0">
+                                <i class="fas fa-key text-primary me-2"></i>Ubah Username & Kata Sandi Login
+                            </h6>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1">
+                                <i class="fas fa-shield-alt me-1"></i>Keamanan Akun
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Pilihan Akun (Jika lebih dari 1 admin) -->
+                            <div class="mb-3 <%= adminList.length <= 1 ? 'd-none' : '' %>">
+                                <label class="form-label fw-semibold">Pilih Akun Administrator yang Akan Diubah</label>
+                                <select id="adminSelectTarget" class="form-select fw-bold">
+                                    <% adminList.forEach(adm => { %>
+                                        <option value="<%= adm.id %>" 
+                                                data-name="<%= adm.name %>" 
+                                                data-username="<%= adm.username %>"
+                                                <%= adm.id === currentAdmin.id ? 'selected' : '' %>>
+                                            <%= adm.name %> (@<%= adm.username %>) <%= adm.id === currentAdmin.id ? '- Akun Anda' : '' %>
+                                        </option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <input type="hidden" name="user_id" id="adminUserIdInput" form="updateAdminForm" value="<%= currentAdmin.id || 1 %>">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nama Lengkap Administrator <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-user-tie"></i></span>
+                                    <input type="text" name="name" id="adminNameInput" form="updateAdminForm" class="form-control" 
+                                           value="<%= currentAdmin.name || 'Administrator' %>" placeholder="Contoh: Administrator NOC" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    Username Login Administrator <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-primary fw-bold">@</span>
+                                    <input type="text" name="username" id="adminUsernameInput" form="updateAdminForm" class="form-control font-monospace fw-bold" 
+                                           value="<%= currentAdmin.username || 'admin' %>" placeholder="Contoh: admin" required autocomplete="off">
+                                </div>
+                                <div class="form-text text-muted small">
+                                    Username ini yang akan Anda ketikkan saat login di halaman <code>/login-admin</code>.
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 border mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold text-danger">
+                                        <i class="fas fa-lock me-1"></i>Kata Sandi Saat Ini <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" name="current_password" id="adminCurrentPassword" form="updateAdminForm" 
+                                               class="form-control" placeholder="Ketik kata sandi lama/saat ini" required autocomplete="current-password">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button" data-target="adminCurrentPassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.72rem;">Wajib dimasukkan untuk memverifikasi identitas pemilik akun sebelum menyimpan perubahan.</small>
+                                </div>
+
+                                <hr class="my-3 text-muted opacity-25">
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold">Kata Sandi Baru</label>
+                                        <div class="input-group">
+                                            <input type="password" name="new_password" id="adminNewPassword" form="updateAdminForm" 
+                                                   class="form-control" placeholder="Kosongkan jika tetap" autocomplete="new-password">
+                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="adminNewPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label fw-semibold">Ulangi Sandi Baru</label>
+                                        <div class="input-group">
+                                            <input type="password" name="confirm_password" id="adminConfirmPassword" form="updateAdminForm" 
+                                                   class="form-control" placeholder="Konfirmasi sandi baru" autocomplete="new-password">
+                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="adminConfirmPassword">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block" style="font-size: 0.72rem;">Kosongkan kedua kolom sandi baru jika Anda <strong>hanya ingin mengganti username atau nama</strong>.</small>
+
+                                <div class="form-check mt-3 pt-2 border-top">
+                                    <input class="form-check-input" type="checkbox" name="reset_to_default" id="adminResetToDefaultCheckbox" form="updateAdminForm" value="1">
+                                    <label class="form-check-label small fw-semibold text-dark" for="adminResetToDefaultCheckbox">
+                                        <i class="fas fa-history text-warning me-1"></i>Atau centang untuk langsung mereset sandi akun ini ke bawaan awal: <code>admin123</code>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" form="updateAdminForm" class="btn btn-primary fw-bold w-100 py-2 shadow-xs">
+                                <i class="fas fa-save me-2"></i>Simpan Perubahan Kredensial Admin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Daftar Akun Administrator & Fitur Reset Cepat -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="card-title fw-bold mb-0">
+                                    <i class="fas fa-users-cog text-success me-2"></i>Daftar Akun Administrator (<%= adminList.length %>)
+                                </h6>
+                                <small class="text-muted">Akun dengan hak akses penuh ke seluruh pengaturan & data sistem</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+                                <i class="fas fa-plus me-1"></i>Tambah Admin
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Administrator</th>
+                                            <th>Username</th>
+                                            <th>Status</th>
+                                            <th class="text-end pe-3">Aksi Reset & Kelola</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% adminList.forEach(adm => { %>
+                                        <tr>
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="avatar-xs bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px;">
+                                                        <i class="fas fa-user-shield"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark"><%= adm.name %></div>
+                                                        <small class="text-muted" style="font-size: 0.72rem;">ID: #<%= adm.id %> &bull; Terdaftar: <%= adm.created_at ? adm.created_at.split(' ')[0] : '-' %></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark font-monospace border px-2 py-1">
+                                                    <i class="fas fa-user me-1 text-primary"></i><%= adm.username %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">
+                                                    <i class="fas fa-check-circle me-1"></i>Aktif
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <div class="btn-group btn-group-sm">
+                                                    <!-- Tombol Pilih & Edit -->
+                                                    <button type="button" class="btn btn-outline-primary btn-load-admin" 
+                                                            data-id="<%= adm.id %>"
+                                                            data-name="<%= adm.name %>"
+                                                            data-username="<%= adm.username %>"
+                                                            title="Muat ke formulir ganti username/sandi">
+                                                        <i class="fas fa-edit me-1"></i>Ubah
+                                                    </button>
+                                                    <!-- Tombol Reset Cepat ke Default -->
+                                                    <button type="button" class="btn btn-outline-warning text-dark btn-quick-reset-pass"
+                                                            data-id="<%= adm.id %>"
+                                                            data-name="<%= adm.name %>"
+                                                            data-username="<%= adm.username %>"
+                                                            title="Reset kata sandi akun ini ke default (admin123)">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                    <!-- Tombol Hapus (jika > 1 admin) -->
+                                                    <% if (adminList.length > 1 && adm.id !== currentAdmin.id) { %>
+                                                    <button type="button" class="btn btn-outline-danger btn-delete-admin"
+                                                            data-id="<%= adm.id %>"
+                                                            data-name="<%= adm.name %>"
+                                                            title="Hapus akun administrator ini">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                    <% } %>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kartu Panduan Keamanan & Pemulihan Akses -->
+                    <div class="card shadow-sm border-0 bg-light">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-2 text-dark small text-uppercase" style="letter-spacing: 0.5px;">
+                                <i class="fas fa-life-ring text-primary me-2"></i>Panduan Reset Sandi & Pemulihan Akses
+                            </h6>
+                            <ul class="text-muted small ps-3 mb-0" style="font-size: 0.8rem; line-height: 1.5;">
+                                <li class="mb-1">
+                                    <strong>Reset via Pengaturan:</strong> Klik tombol kuning <span class="badge bg-warning text-dark"><i class="fas fa-undo"></i></span> pada tabel di atas untuk langsung mereset kata sandi akun ke default: <code>admin123</code>.
+                                </li>
+                                <li class="mb-1">
+                                    <strong>Ganti Username:</strong> Anda dapat mengganti username <code>admin</code> menjadi nama lain yang lebih aman (misal: <code>superadmin</code>, <code>noc_admin</code>, dll.).
+                                </li>
+                                <li class="mb-1">
+                                    <strong>Lupa Sandi saat Logout:</strong> Pada halaman login admin (<code>/login-admin</code>), Anda dapat menggunakan fitur <em>Lupa Sandi</em> untuk menerima kode OTP reset sandi via WhatsApp ke nomor Admin: <strong class="font-monospace text-dark"><%= settings.admin_otp_phone || settings.psb_admin_phone || '082240087489' %></strong>.
+                                </li>
+                                <li>
+                                    <strong>Keamanan:</strong> Pastikan selalu mengingat atau mencatat kata sandi baru Anda di tempat yang aman.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+<!-- Standalone Forms untuk Admin Management (di luar settingsForm) -->
+<form id="updateAdminForm" action="/settings/admin/update" method="POST"></form>
+<form id="resetAdminPassForm" action="/settings/admin/reset-password" method="POST">
+    <input type="hidden" name="user_id" id="resetAdminUserIdInput">
+</form>
+<form id="deleteAdminForm" method="POST"></form>
+
+<!-- Modal Tambah Akun Administrator Baru -->
+<div class="modal fade" id="createAdminModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/settings/admin/create" method="POST">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-user-plus me-2"></i>Tambah Akun Administrator Baru
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" placeholder="Contoh: Admin NOC Ciparay" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Username Login <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary fw-bold">@</span>
+                            <input type="text" name="username" class="form-control font-monospace fw-bold" placeholder="Contoh: admin2" required autocomplete="off">
+                        </div>
+                        <small class="text-muted" style="font-size: 0.72rem;">Gunakan huruf kecil atau angka tanpa spasi.</small>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Kata Sandi <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" name="password" id="modalNewAdminPass" class="form-control" placeholder="Kata sandi" required autocomplete="new-password">
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="modalNewAdminPass">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Ulangi Sandi <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" name="confirm_password" id="modalConfirmAdminPass" class="form-control" placeholder="Ulangi sandi" required autocomplete="new-password">
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="modalConfirmAdminPass">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block" style="font-size: 0.72rem;">Minimal 4 karakter.</small>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="fas fa-save me-1"></i>Simpan Akun Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Standalone Forms untuk Tambah, Toggle & Hapus Teknisi (di luar settingsForm) -->
+<form id="addTechForm" action="/settings/technicians" method="POST"></form>
+<form id="toggleTechForm" method="POST"></form>
+<form id="deleteTechForm" method="POST"></form>
+
+<!-- Modal Edit Data Nomor WA, Username & Password Teknisi -->
+<div class="modal fade" id="editTechModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="editTechForm" method="POST">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-user-edit me-2"></i>Edit Nomor WA & Akun Login Teknisi
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Lengkap Teknisi <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="editTechName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nomor WhatsApp Teknisi <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-success text-white"><i class="fab fa-whatsapp"></i></span>
+                            <input type="text" name="phone" id="editTechPhone" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Username Login <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="editTechUsername" class="form-control" required>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">Password Baru (Opsional)</label>
+                            <div class="input-group">
+                                <input type="password" name="password" id="editTechPassword" class="form-control" placeholder="Kosongkan jika tetap">
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="editTechPassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.7rem;">Isi hanya jika ingin mengganti password</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Jabatan / Spesialisasi</label>
+                        <input type="text" name="role" id="editTechRole" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Catatan</label>
+                        <input type="text" name="notes" id="editTechNotes" class="form-control">
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" value="1" id="editTechActive">
+                        <label class="form-check-label fw-semibold" for="editTechActive">
+                            Status Aktif (Menerima WA Tiket & Bisa Login)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="fas fa-save me-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog Restore Database -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <form id="restoreForm" method="POST" enctype="multipart/form-data">
+                <div class="modal-header border-bottom py-3">
+                    <h5 class="modal-title fw-bold" id="restoreModalLabel">
+                        <i class="fas fa-history text-danger me-2"></i>Restore Data
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="restoreModalAlert" class="alert alert-warning py-2 px-3 small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <span id="restoreModalAlertText"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="restoreFileInput" class="form-label fw-semibold" id="restoreFileLabel">Pilih Berkas Cadangan</label>
+                        <input type="file" class="form-control" id="restoreFileInput" name="backup_file" required>
+                        <div class="form-text small" id="restoreFileHelp"></div>
+                    </div>
+
+                    <div class="form-check p-3 rounded bg-light border">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="restoreConfirmCheck" required>
+                        <label class="form-check-label small fw-semibold text-danger" for="restoreConfirmCheck">
+                            Saya telah memahami dan setuju untuk melakukan pemulihan data ini.
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light py-2">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold" id="btnSubmitRestore">
+                        <i class="fas fa-history me-1"></i>Mulai Pemulihan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog Reset Database -->
+<div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <form id="resetForm" action="/settings/database/reset" method="POST">
+                <input type="hidden" name="reset_type" id="resetTypeInput" value="operational">
+                <div class="modal-header bg-danger text-white py-3">
+                    <h5 class="modal-title fw-bold" id="resetModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Konfirmasi Pengosongan Database
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger py-2 px-3 small mb-3">
+                        <div class="fw-bold mb-1"><i class="fas fa-shield-alt me-1"></i>PERINGATAN DATA PERMANEN</div>
+                        <span id="resetModalDesc">Tindakan ini akan mengosongkan data terpilih dari sistem.</span>
+                    </div>
+
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="small fw-semibold text-muted mb-2">Rincian Dampak Pengosongan:</div>
+                        <div id="resetModalDetails" class="small"></div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded border border-danger-subtle mb-3">
+                        <label for="resetConfirmInput" class="form-label fw-bold small text-danger mb-1">
+                            Ketik kata <span class="badge bg-danger">RESET</span> untuk konfirmasi:
+                        </label>
+                        <input type="text" class="form-control text-center fw-bold font-monospace text-danger" id="resetConfirmInput" name="confirm_text" placeholder="Ketik kata RESET" autocomplete="off" required>
+                        <div class="form-text small text-muted text-center mt-1">Harap ketik huruf kapital persis seperti di atas</div>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Sistem otomatis menyimpan cadangan keselamatan (<i>pre-reset safety backup</i>) sebelum data dihapus.
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light py-2">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold" id="btnSubmitReset" disabled>
+                        <i class="fas fa-trash-alt me-1"></i>Kosongkan Database Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog Ubah Port Web Server Cepat -->
+<div class="modal fade" id="modalChangeWebPort" tabindex="-1" aria-labelledby="modalChangeWebPortLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <form id="formChangeWebPort">
+                <div class="modal-header bg-primary text-white py-3">
+                    <h5 class="modal-title fw-bold" id="modalChangeWebPortLabel">
+                        <i class="fas fa-network-wired me-2"></i>Ubah Port Web Server
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-primary-subtle border border-primary-subtle text-primary py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                        <i class="fas fa-info-circle fs-5"></i>
+                        <div>
+                            Port web aktif saat ini: <strong class="font-monospace" id="currentPortBadge"><%= settings.web_port || process.env.PORT || '3000' %></strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputNewWebPort" class="form-label fw-bold">Nomor Port Baru</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light text-muted font-monospace"><i class="fas fa-globe me-1"></i>http://IP:</span>
+                            <input type="number" class="form-control font-monospace fw-bold text-primary" id="inputNewWebPort" name="port"
+                                   min="1" max="65535" value="<%= settings.web_port || process.env.PORT || '3000' %>" required>
+                        </div>
+                        <div class="d-flex align-items-center gap-1 mt-2">
+                            <span class="text-muted small me-1">Pilihan Cepat:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace" onclick="$('#inputNewWebPort').val(80).trigger('input')">80 (HTTP)</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace" onclick="$('#inputNewWebPort').val(3000).trigger('input')">3000</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace" onclick="$('#inputNewWebPort').val(8080).trigger('input')">8080</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-monospace" onclick="$('#inputNewWebPort').val(8888).trigger('input')">8888</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded border">
+                        <h6 class="fw-bold small text-dark mb-2"><i class="fas fa-exclamation-triangle text-warning me-1"></i>Catatan Penting Setelah Ubah Port:</h6>
+                        <ul class="text-muted small mb-0 ps-3">
+                            <li>Port baru akan otomatis tersimpan ke database dan file konfigurasi <code>.env</code>.</li>
+                            <li>Aplikasi server perlu <strong>dimulai ulang (restart)</strong> agar proses Node.js membuka port baru tersebut.</li>
+                            <li>Setelah restart, akses web di browser menggunakan port baru (contoh: <code>http://localhost:<span id="previewPortTxt"><%= settings.web_port || process.env.PORT || '3000' %></span></code>).</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-bold px-3" id="btnSubmitPort">
+                        <i class="fas fa-save me-1"></i>Simpan Perubahan Port
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Simpan dan Pulihkan Tab Aktif (Persist Active Tab via localStorage & URL Hash)
+    const tabTriggers = document.querySelectorAll('#settingsTab button[data-bs-toggle="pill"]');
+    tabTriggers.forEach(function(trigger) {
+        trigger.addEventListener('shown.bs.tab', function(e) {
+            const targetId = e.target.getAttribute('data-bs-target');
+            if (targetId) {
+                localStorage.setItem('active_settings_tab', targetId);
+            }
+        });
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryTab = urlParams.get('tab') ? `#tab-${urlParams.get('tab')}` : null;
+    const hashTab = window.location.hash;
+    const tabToActivate = (queryTab && document.querySelector(`#settingsTab button[data-bs-target="${queryTab}"]`))
+        ? queryTab
+        : ((hashTab && document.querySelector(`#settingsTab button[data-bs-target="${hashTab}"]`))
+            ? hashTab
+            : localStorage.getItem('active_settings_tab'));
+
+    if (tabToActivate) {
+        const activeBtn = document.querySelector(`#settingsTab button[data-bs-target="${tabToActivate}"]`);
+        if (activeBtn) {
+            const tabInstance = bootstrap.Tab.getOrCreateInstance(activeBtn);
+            tabInstance.show();
+        }
+    }
+
+    // 2. Toggle password visibility
+    document.querySelectorAll('.toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+    });
+
+    // 3. WhatsApp Status & QR Code Logic
+    let waPollInterval = null;
+
+    function setWaStatusUI(status, qr, error) {
+        const badge = document.getElementById('waStatusBadge');
+        const loadingArea = document.getElementById('waLoadingArea');
+        const qrArea = document.getElementById('waQrArea');
+        const qrImage = document.getElementById('waQrImage');
+        const connectedArea = document.getElementById('waConnectedArea');
+        const errorAlert = document.getElementById('waErrorAlert');
+        const connectBtn = document.getElementById('waConnectBtn');
+        const disconnectBtn = document.getElementById('waDisconnectBtn');
+
+        if (error) {
+            errorAlert.textContent = error;
+            errorAlert.style.display = 'block';
+        } else {
+            errorAlert.style.display = 'none';
+        }
+
+        if (status === 'connected') {
+            badge.className = 'badge bg-success px-3 py-2';
+            badge.innerHTML = '<i class="fas fa-check-circle me-1"></i>Terhubung';
+            if (loadingArea) loadingArea.style.display = 'none';
+            if (qrArea) qrArea.style.display = 'none';
+            if (connectedArea) connectedArea.style.display = 'block';
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (disconnectBtn) {
+                disconnectBtn.style.display = 'block';
+                disconnectBtn.disabled = false;
+                disconnectBtn.innerHTML = '<i class="fas fa-unlink me-2"></i>Putuskan Koneksi WhatsApp';
+            }
+        } else if (status === 'connecting') {
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (disconnectBtn) {
+                disconnectBtn.style.display = 'block';
+                disconnectBtn.disabled = false;
+                disconnectBtn.innerHTML = '<i class="fas fa-unlink me-2"></i>Batalkan Inisialisasi';
+            }
+            if (connectedArea) connectedArea.style.display = 'none';
+
+            if (qr) {
+                badge.className = 'badge bg-warning text-dark px-3 py-2';
+                badge.innerHTML = '<i class="fas fa-qrcode me-1"></i>Scan QR Code';
+                if (qrImage) qrImage.src = qr;
+                if (qrArea) qrArea.style.display = 'block';
+                if (loadingArea) loadingArea.style.display = 'none';
+            } else {
+                badge.className = 'badge bg-info text-white px-3 py-2';
+                badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyiapkan...';
+                if (loadingArea) loadingArea.style.display = 'block';
+                if (qrArea) qrArea.style.display = 'none';
+            }
+        } else {
+            badge.className = 'badge bg-secondary px-3 py-2';
+            badge.innerHTML = '<i class="fas fa-times-circle me-1"></i>Tidak Terhubung';
+            if (loadingArea) loadingArea.style.display = 'none';
+            if (qrArea) qrArea.style.display = 'none';
+            if (connectedArea) connectedArea.style.display = 'none';
+            if (connectBtn) {
+                connectBtn.style.display = 'block';
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Hubungkan WhatsApp (Munculkan QR)';
+            }
+            if (disconnectBtn) disconnectBtn.style.display = 'none';
+        }
+    }
+
+    function checkWaStatus() {
+        fetch('/api/whatsapp/status')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                setWaStatusUI(data.status, data.qr, data.error);
+                if (data.status === 'connected') {
+                    if (waPollInterval) {
+                        clearInterval(waPollInterval);
+                        waPollInterval = null;
+                    }
+                    startPolling(10000);
+                }
+            })
+            .catch(function(err) {
+                console.error('Error polling WA status:', err);
+            });
+    }
+
+    function startPolling(intervalMs) {
+        if (waPollInterval) clearInterval(waPollInterval);
+        waPollInterval = setInterval(checkWaStatus, intervalMs || 2000);
+    }
+
+    // Connect Button
+    const connectBtn = document.getElementById('waConnectBtn');
+    if (connectBtn) {
+        connectBtn.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyiapkan Browser...';
+            setWaStatusUI('connecting', null, null);
+            startPolling(2000);
+
+            fetch('/api/whatsapp/initialize', { method: 'POST' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    console.log('WA init response:', data);
+                })
+                .catch(function(err) {
+                    console.error('WA init request failed:', err);
+                    setWaStatusUI('disconnected', null, 'Gagal inisialisasi: ' + err.message);
+                });
+        });
+    }
+
+    // Disconnect Button
+    const disconnectBtn = document.getElementById('waDisconnectBtn');
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memutuskan...';
+
+            if (waPollInterval) {
+                clearInterval(waPollInterval);
+                waPollInterval = null;
+            }
+
+            fetch('/api/whatsapp/disconnect', { method: 'POST' })
+                .then(function(res) { return res.json(); })
+                .then(function() {
+                    setWaStatusUI('disconnected', null, null);
+                })
+                .catch(function(err) {
+                    console.error('WA disconnect failed:', err);
+                    setWaStatusUI('disconnected', null, err.message);
+                });
+        });
+    }
+
+    // Auto-poll if already connecting
+    <% if (waStatusVal === 'connecting' || waQRVal) { %>
+    startPolling(2000);
+    <% } %>
+
+    // 4. Copy reference code button handler
+    document.querySelectorAll('.copy-ref-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tag = this.dataset.tag;
+            if (!tag) return;
+
+            navigator.clipboard.writeText(tag).then(() => {
+                const originalHtml = this.innerHTML;
+                this.classList.replace('btn-outline-secondary', 'btn-success');
+                this.classList.replace('btn-outline-success', 'btn-success');
+                this.innerHTML = '<i class="fas fa-check me-1"></i>Tersalin';
+
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                    this.classList.replace('btn-success', this.dataset.tag === '{paket_internet}' ? 'btn-outline-success' : 'btn-outline-secondary');
+                }, 1500);
+            }).catch(() => {
+                prompt('Salin kode referensi:', tag);
+            });
+        });
+    });
+
+    // 5. QRIS Image Upload Handler (FileReader + Auto Resize / Canvas Optimization)
+    const qrisInput = document.getElementById('qris_file_input');
+    const qrisHidden = document.getElementById('payment_qris_image');
+    const qrisPreview = document.getElementById('qrisPreviewContainer');
+
+    function bindRemoveQrisBtn() {
+        const removeBtn = document.getElementById('btnRemoveQris');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                qrisHidden.value = '';
+                if (qrisInput) qrisInput.value = '';
+                qrisPreview.innerHTML = `
+                    <i class="fas fa-qrcode fa-3x text-muted mb-2 opacity-50"></i>
+                    <small class="text-muted d-block">Belum ada barcode QRIS</small>
+                `;
+            });
+        }
+    }
+    bindRemoveQrisBtn();
+
+    if (qrisInput) {
+        qrisInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                alert('Silakan pilih file gambar yang valid (PNG/JPG/WEBP)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/png', 0.9);
+                    qrisHidden.value = dataUrl;
+
+                    qrisPreview.innerHTML = `
+                        <img src="${dataUrl}" class="img-fluid rounded border bg-white p-1 mb-2 shadow-sm" style="max-height: 125px; max-width: 125px; object-fit: contain;">
+                        <button type="button" class="btn btn-sm btn-outline-danger d-block w-100" id="btnRemoveQris">
+                            <i class="fas fa-trash me-1"></i>Hapus QRIS
+                        </button>
+                    `;
+                    bindRemoveQrisBtn();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+});
+
+// 6. Service Restart Confirmation via SweetAlert2
+window.confirmRestartService = function(type) {
+    let title = '';
+    let text = '';
+    let actionUrl = '';
+    let confirmBtnText = 'Ya, Restart Sekarang';
+    let confirmColor = '#dc3545';
+
+    if (type === 'all') {
+        title = 'Restart Semua Services?';
+        text = 'Seluruh background services (WhatsApp Gateway, Cron Scheduler, MikroTik Router API, dan GenieACS Client) akan dimuat ulang. Sesi login admin tetap aktif.';
+        actionUrl = '/settings/services/restart-all';
+    } else if (type === 'whatsapp') {
+        title = 'Restart WhatsApp Service?';
+        text = 'Proses WhatsApp Web Puppeteer akan diputus dan dihubungkan ulang. Gunakan jika status WA tersangkut atau tidak merespon.';
+        actionUrl = '/settings/services/restart-whatsapp';
+        confirmColor = '#198754';
+    } else if (type === 'scheduler') {
+        title = 'Restart Auto-Billing Scheduler?';
+        text = 'Penjadwal cron tagihan otomatis (jam 00:01 WIB) dan auto-isolir (tanggal 8 jam 23:59) akan diinisialisasi ulang.';
+        actionUrl = '/settings/services/restart-scheduler';
+        confirmColor = '#0d6efd';
+    } else if (type === 'mikrotik') {
+        title = 'Segarkan Koneksi MikroTik?';
+        text = 'Seluruh koneksi soket API MikroTik akan diputus dan dibuat ulang saat ada permintaan baru.';
+        actionUrl = '/settings/services/restart-mikrotik';
+        confirmColor = '#ffc107';
+        confirmBtnText = 'Ya, Segarkan';
+    } else if (type === 'genieacs') {
+        title = 'Segarkan Service GenieACS?';
+        text = 'Klien REST API GenieACS NBI akan dikonfigurasi ulang sesuai URL pengaturan saat ini.';
+        actionUrl = '/settings/services/restart-genieacs';
+        confirmColor = '#0dcaf0';
+        confirmBtnText = 'Ya, Segarkan';
+    }
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: confirmBtnText,
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses Restart Service...',
+                    text: 'Mohon tunggu beberapa detik',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = actionUrl;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    } else {
+        if (confirm(title + '\n' + text)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = actionUrl;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+};
+
+// 7. Vacuum Database SQLite Confirmation
+window.confirmVacuumDatabase = function() {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Optimalkan Database SQLite?',
+            text: 'Perintah VACUUM & PRAGMA optimize akan merapikan struktur file database, menghemat ruang disk, dan mempercepat pembacaan data.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Optimalkan Sekarang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Mengoptimalkan Database...',
+                    text: 'Sedang menjalankan VACUUM & optimasi indeks',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/settings/database/vacuum';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    } else {
+        if (confirm('Optimalkan Database SQLite (VACUUM & PRAGMA optimize)?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/settings/database/vacuum';
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+};
+
+// 8. Open Restore Modal Logic
+window.openRestoreModal = function(type) {
+    const modalEl = document.getElementById('restoreModal');
+    const form = document.getElementById('restoreForm');
+    const title = document.getElementById('restoreModalLabel');
+    const alertText = document.getElementById('restoreModalAlertText');
+    const fileInput = document.getElementById('restoreFileInput');
+    const fileLabel = document.getElementById('restoreFileLabel');
+    const fileHelp = document.getElementById('restoreFileHelp');
+    const confirmCheck = document.getElementById('restoreConfirmCheck');
+    const submitBtn = document.getElementById('btnSubmitRestore');
+
+    if (!modalEl || !form) return;
+
+    fileInput.value = '';
+    confirmCheck.checked = false;
+
+    if (type === 'full') {
+        form.action = '/settings/restore/full';
+        fileInput.accept = '.db,.sqlite,.sqlite3';
+        title.innerHTML = '<i class="fas fa-database text-danger me-2"></i>1. Restore Database Full (.db)';
+        alertText.innerHTML = '<strong>PERINGATAN:</strong> Tindakan ini akan menimpa seluruh data sistem dengan berkas database dari file backup. Sistem otomatis membuat cadangan keselamatan (<i>safety backup</i>) sebelum proses dieksekusi.';
+        fileLabel.textContent = 'Pilih File Database SQLite (.db / .sqlite)';
+        fileHelp.textContent = 'Pilih berkas file hasil "Backup Database Full" (ekstensi .db).';
+        submitBtn.className = 'btn btn-danger px-4 fw-semibold';
+        submitBtn.innerHTML = '<i class="fas fa-history me-1"></i>Mulai Restore Full DB';
+    } else if (type === 'customers') {
+        form.action = '/settings/restore/customers';
+        fileInput.accept = '.xlsx,.xls,.csv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json';
+        title.innerHTML = '<i class="fas fa-file-excel text-success me-2"></i>2. Restore Data Pelanggan (Excel / CSV / JSON)';
+        alertText.innerHTML = 'Data pelanggan dan paket internet dari berkas Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), atau JSON akan diimpor dan diperbarui ke database. Data tagihan invoice dan pembayaran yang ada tetap aman.';
+        fileLabel.textContent = 'Pilih File Excel (.xlsx / .xls), CSV (.csv), atau JSON';
+        fileHelp.textContent = 'Pilih berkas file Excel (.xlsx), CSV (.csv), atau JSON hasil Backup Pelanggan.';
+        submitBtn.className = 'btn btn-success px-4 fw-semibold';
+        submitBtn.innerHTML = '<i class="fas fa-file-import me-1"></i>Impor Data Pelanggan';
+    } else if (type === 'reports') {
+        form.action = '/settings/restore/reports';
+        fileInput.accept = '.xlsx,.xls,.csv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json';
+        title.innerHTML = '<i class="fas fa-file-invoice-dollar text-warning me-2"></i>3. Restore Laporan & Transaksi (Excel / CSV / JSON)';
+        alertText.innerHTML = 'Data rekap faktur invoice dan catatan riwayat pembayaran transaksi dari berkas Excel (<code>.xlsx</code>), CSV (<code>.csv</code>), atau JSON akan diimpor dan diperbarui ke database.';
+        fileLabel.textContent = 'Pilih File Excel (.xlsx / .xls), CSV (.csv), atau JSON';
+        fileHelp.textContent = 'Pilih berkas file Excel (.xlsx), CSV (.csv), atau JSON hasil Backup Laporan & Pemasukan.';
+        submitBtn.className = 'btn btn-warning text-dark px-4 fw-semibold';
+        submitBtn.innerHTML = '<i class="fas fa-file-invoice me-1"></i>Impor Data Laporan';
+    } else if (type === 'settings') {
+        form.action = '/settings/restore/settings';
+        fileInput.accept = '.json,application/json';
+        title.innerHTML = '<i class="fas fa-sliders-h text-info me-2"></i>4. Restore Pengaturan Sistem (.json)';
+        alertText.innerHTML = 'Pengaturan umum ISP, template pesan WhatsApp billing, info bank/QRIS, serta router MikroTik akan dipulihkan.';
+        fileLabel.textContent = 'Pilih File Backup Pengaturan (.json)';
+        fileHelp.textContent = 'Pilih berkas file JSON hasil "Backup Pengaturan Saja".';
+        submitBtn.className = 'btn btn-info text-white px-4 fw-semibold';
+        submitBtn.innerHTML = '<i class="fas fa-cog me-1"></i>Impor Pengaturan';
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+};
+
+// Form submit handler with SweetAlert2 confirmation
+document.addEventListener('DOMContentLoaded', function() {
+    const restoreForm = document.getElementById('restoreForm');
+    if (restoreForm) {
+        restoreForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('restoreFileInput');
+            const confirmCheck = document.getElementById('restoreConfirmCheck');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Silakan pilih berkas file backup terlebih dahulu.');
+                return;
+            }
+
+            if (!confirmCheck.checked) {
+                alert('Harap centang konfirmasi persetujuan pemulihan data.');
+                return;
+            }
+
+            const fileName = fileInput.files[0].name;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Konfirmasi Pemulihan Database?',
+                    html: `Apakah Anda yakin ingin memulihkan data dari berkas <strong>${fileName}</strong>?<br><small class="text-danger">Harap pastikan berkas ini adalah cadangan yang sah.</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Lanjutkan Restore!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Memproses Pemulihan Database...',
+                            html: 'Mohon tunggu sesaat dan jangan menutup atau me-refresh halaman.',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        restoreForm.submit();
+                    }
+                });
+            } else {
+                if (confirm(`Apakah Anda yakin ingin memulihkan data dari berkas "${fileName}"?`)) {
+                    restoreForm.submit();
+                }
+            }
+        });
+    }
+});
+
+// 9. Open Reset Database Modal Logic
+window.openResetModal = function(type) {
+    const modalEl = document.getElementById('resetModal');
+    const form = document.getElementById('resetForm');
+    const title = document.getElementById('resetModalLabel');
+    const desc = document.getElementById('resetModalDesc');
+    const details = document.getElementById('resetModalDetails');
+    const typeInput = document.getElementById('resetTypeInput');
+    const confirmInput = document.getElementById('resetConfirmInput');
+    const submitBtn = document.getElementById('btnSubmitReset');
+
+    if (!modalEl || !form) return;
+
+    typeInput.value = type;
+    confirmInput.value = '';
+    submitBtn.disabled = true;
+
+    if (type === 'operational') {
+        title.innerHTML = '<i class="fas fa-user-slash me-2"></i>1. Kosongkan Pelanggan & Tagihan';
+        desc.innerHTML = 'Menghapus data operasional (pelanggan & keuangan). <strong>Pengaturan sistem, akun admin, dan router MikroTik tetap aman.</strong>';
+        details.innerHTML = `
+            <div class="text-danger mb-1"><i class="fas fa-times me-1"></i> Seluruh data pelanggan akan dihapus</div>
+            <div class="text-danger mb-1"><i class="fas fa-times me-1"></i> Seluruh faktur invoice & transaksi pembayaran akan dihapus</div>
+            <div class="text-danger mb-1"><i class="fas fa-times me-1"></i> Seluruh riwayat log aktivitas akan dibersihkan</div>
+            <div class="text-success fw-bold"><i class="fas fa-check me-1"></i> Akun Login, Pengaturan ISP, dan Konfigurasi MikroTik TETAP AMAN</div>
+        `;
+    } else if (type === 'logs') {
+        title.innerHTML = '<i class="fas fa-clipboard-list me-2"></i>2. Bersihkan Log Aktivitas';
+        desc.innerHTML = 'Membersihkan riwayat log aktivitas audit sistem. Berguna untuk merapikan database tanpa menyentuh data lainnya.';
+        details.innerHTML = `
+            <div class="text-danger mb-1"><i class="fas fa-times me-1"></i> Seluruh riwayat log aktivitas sistem akan dihapus</div>
+            <div class="text-success fw-bold"><i class="fas fa-check me-1"></i> Data pelanggan, paket, tagihan, router, dan pengaturan TIDAK disentuh</div>
+        `;
+    } else if (type === 'factory') {
+        title.innerHTML = '<i class="fas fa-radiation-alt me-2"></i>3. Factory Reset Total Database';
+        desc.innerHTML = '<strong class="text-danger">PERINGATAN SANGAT KRITIS:</strong> Seluruh database akan dikosongkan total dan dikembalikan ke kondisi instalasi awal baru!';
+        details.innerHTML = `
+            <div class="text-danger fw-bold mb-1"><i class="fas fa-times me-1"></i> Hapus SELURUH Pelanggan, Invoices, dan Pembayaran</div>
+            <div class="text-danger fw-bold mb-1"><i class="fas fa-times me-1"></i> Hapus Konfigurasi Router MikroTik & Topologi Jaringan</div>
+            <div class="text-danger fw-bold mb-1"><i class="fas fa-times me-1"></i> Hapus Paket Internet tambahan (Hanya disisakan paket bypass)</div>
+            <div class="text-primary fw-bold"><i class="fas fa-key me-1"></i> Akun admin dikembalikan ke setelan awal: <strong>admin</strong> / <strong>admin123</strong></div>
+        `;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+};
+
+// Reset confirmation input listener & form submit handler
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('resetConfirmInput');
+    const submitBtn = document.getElementById('btnSubmitReset');
+    const resetForm = document.getElementById('resetForm');
+
+    if (confirmInput && submitBtn) {
+        confirmInput.addEventListener('input', function() {
+            submitBtn.disabled = (this.value.trim() !== 'RESET');
+        });
+    }
+
+    if (resetForm) {
+        resetForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const type = document.getElementById('resetTypeInput').value;
+            const confirmVal = confirmInput.value.trim();
+
+            if (confirmVal !== 'RESET') {
+                alert('Harap ketik kata "RESET" dengan huruf kapital.');
+                return;
+            }
+
+            let confirmTitle = 'Konfirmasi Pengosongan Database?';
+            let confirmHtml = 'Apakah Anda benar-benar yakin ingin mengosongkan data ini?<br><small class="text-danger fw-bold">Sistem otomatis membuat backup keselamatan sebelum data dihapus.</small>';
+
+            if (type === 'factory') {
+                confirmTitle = 'FACTORY RESET TOTAL?';
+                confirmHtml = 'SELURUH data di dalam sistem akan dikosongkan ke setelan awal pabrik!<br><small class="text-danger fw-bold">Apakah Anda yakin 100% ingin melanjutkan?</small>';
+            }
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: confirmTitle,
+                    html: confirmHtml,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Kosongkan Sekarang!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Mengosongkan Database...',
+                            html: 'Sedang membuat cadangan keselamatan dan membersihkan tabel...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        resetForm.submit();
+                    }
+                });
+            } else {
+                if (confirm(confirmTitle)) {
+                    resetForm.submit();
+                }
+            }
+        });
+    }
+});
+// Handler Modal Edit Teknisi, Toggle Status, & Hapus Teknisi
+window.openEditTechModal = function(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name') || '';
+    const phone = btn.getAttribute('data-phone') || '';
+    const username = btn.getAttribute('data-username') || '';
+    const role = btn.getAttribute('data-role') || 'Teknisi Lapangan';
+    const notes = btn.getAttribute('data-notes') || '';
+    const isActive = btn.getAttribute('data-active') === '1';
+
+    const form = document.getElementById('editTechForm');
+    form.action = '/settings/technicians/' + id + '/update';
+
+    document.getElementById('editTechName').value = name;
+    document.getElementById('editTechPhone').value = phone;
+    document.getElementById('editTechUsername').value = username;
+    document.getElementById('editTechPassword').value = '';
+    document.getElementById('editTechRole').value = role;
+    document.getElementById('editTechNotes').value = notes;
+    document.getElementById('editTechActive').checked = isActive;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editTechModal'));
+    modal.show();
+};
+
+window.submitTechToggle = function(id) {
+    const form = document.getElementById('toggleTechForm');
+    form.action = '/settings/technicians/' + id + '/toggle';
+    form.submit();
+};
+
+window.submitTechDelete = function(id, name) {
+    const form = document.getElementById('deleteTechForm');
+    form.action = '/settings/technicians/' + id + '/delete';
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Hapus Akun Teknisi?',
+            html: 'Apakah Anda yakin ingin menghapus akun teknisi <strong>' + name + '</strong>?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    } else if (confirm('Hapus akun teknisi ' + name + '?')) {
+        form.submit();
+    }
+};
+
+// -------------------------------------------------------------------------
+// Event Handler untuk Akun & Kredensial Administrator
+// -------------------------------------------------------------------------
+if (window.jQuery) {
+    $(function() {
+        // Muat data admin ke form ubah kredensial saat tombol "Ubah" ditekan di tabel
+        $(document).on('click', '.btn-load-admin', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            const username = $(this).data('username');
+
+            $('#adminUserIdInput').val(id);
+            $('#adminNameInput').val(name);
+            $('#adminUsernameInput').val(username);
+            if ($('#adminSelectTarget').length) {
+                $('#adminSelectTarget').val(id);
+            }
+
+            $('#adminCurrentPassword').val('').focus();
+            $('#adminNewPassword').val('');
+            $('#adminConfirmPassword').val('');
+            $('#adminResetToDefaultCheckbox').prop('checked', false);
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: `Formulir siap untuk akun: ${name} (@${username})`,
+                    showConfirmButton: false,
+                    timer: 2500
+                });
+            }
+        });
+
+        // Pilihan dropdown admin di form kiri
+        $('#adminSelectTarget').on('change', function() {
+            const selected = $(this).find('option:selected');
+            const id = selected.val();
+            const name = selected.data('name');
+            const username = selected.data('username');
+
+            $('#adminUserIdInput').val(id);
+            $('#adminNameInput').val(name);
+            $('#adminUsernameInput').val(username);
+        });
+
+        // Reset Cepat Kata Sandi ke Default (admin123)
+        $(document).on('click', '.btn-quick-reset-pass', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name') || 'Administrator';
+            const username = $(this).data('username') || 'admin';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Reset Sandi ke Default?',
+                    html: `Kata sandi untuk akun administrator <strong>${name}</strong> (<code>${username}</code>) akan direset ke bawaan awal: <strong>admin123</strong>.<br><br>Apakah Anda yakin?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e0a800',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-undo me-1"></i> Ya, Reset ke admin123!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#resetAdminUserIdInput').val(id);
+                        document.getElementById('resetAdminPassForm').submit();
+                    }
+                });
+            } else if (confirm(`Reset kata sandi akun ${username} ke admin123?`)) {
+                $('#resetAdminUserIdInput').val(id);
+                document.getElementById('resetAdminPassForm').submit();
+            }
+        });
+
+        // Hapus Akun Admin
+        $(document).on('click', '.btn-delete-admin', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name') || 'Administrator';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Hapus Akun Administrator?',
+                    html: `Apakah Anda yakin ingin menghapus akun administrator <strong>${name}</strong>? Tindakan ini tidak dapat dibatalkan.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-trash me-1"></i> Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const delForm = document.getElementById('deleteAdminForm');
+                        delForm.action = `/settings/admin/${id}/delete`;
+                        delForm.submit();
+                    }
+                });
+            } else if (confirm(`Hapus akun administrator ${name}?`)) {
+                const delForm = document.getElementById('deleteAdminForm');
+                delForm.action = `/settings/admin/${id}/delete`;
+                delForm.submit();
+            }
+        });
+        // Port Web Server Handlers
+        window.setWebPortInput = function(val) {
+            $('#web_port').val(val);
+        };
+
+        window.openChangePortModal = function() {
+            const cur = $('#web_port').val() || '<%= settings.web_port || process.env.PORT || "3000" %>';
+            $('#inputNewWebPort').val(cur);
+            $('#previewPortTxt').text(cur);
+            const m = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalChangeWebPort'));
+            m.show();
+        };
+
+        $(document).on('input', '#inputNewWebPort', function() {
+            $('#previewPortTxt').text($(this).val() || '3000');
+        });
+
+        $(document).on('submit', '#formChangeWebPort', function(e) {
+            e.preventDefault();
+            const portVal = parseInt($('#inputNewWebPort').val(), 10);
+            if (!portVal || portVal < 1 || portVal > 65535) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Port Tidak Valid',
+                        text: 'Nomor port harus berupa angka antara 1 sampai 65535.'
+                    });
+                } else {
+                    alert('Nomor port harus berupa angka antara 1 sampai 65535.');
+                }
+                return;
+            }
+
+            const btn = $('#btnSubmitPort');
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
+
+            fetch('/settings/web-port', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port: portVal })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Simpan Perubahan Port');
+                if (data.success) {
+                    const m = bootstrap.Modal.getInstance(document.getElementById('modalChangeWebPort'));
+                    if (m) m.hide();
+                    $('#web_port').val(data.port);
+                    $('#currentPortBadge').text(data.port);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Port Berhasil Disimpan!',
+                            html: `${data.message}<br><br><div class="p-2 rounded bg-light border font-monospace">Port Baru: <strong class="text-primary">${data.port}</strong></div>`,
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        alert(data.message);
+                        window.location.reload();
+                    }
+                } else {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Mengubah Port',
+                            text: data.message || 'Terjadi kesalahan sistem'
+                        });
+                    } else {
+                        alert(data.message || 'Gagal mengubah port');
+                    }
+                }
+            })
+            .catch(err => {
+                btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Simpan Perubahan Port');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Kesalahan Jaringan',
+                        text: err.message
+                    });
+                } else {
+                    alert('Kesalahan jaringan: ' + err.message);
+                }
+            });
+        });
+    });
+}
+</script>
+
+<%- include('partials/footer') %>

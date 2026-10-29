@@ -1,0 +1,456 @@
+<%- include('partials/header', { title: `Detail PSB ${psb.psb_number}`, activePage: 'psb' }) %>
+<%
+    const isTechUser = (typeof user !== 'undefined' && user && (user.role === 'technician' || user.role === 'teknisi'));
+    const formatRupiah = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    const stepMap = { 'open': 1, 'accepted': 2, 'in_progress': 3, 'completed': 4 };
+    const currentStep = stepMap[psb.status] || 1;
+%>
+
+<!-- Navigasi Atas -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <a href="/psb" class="btn btn-outline-secondary btn-sm fw-bold">
+        <i class="fas fa-arrow-left me-1"></i>Kembali ke Daftar Tiket PSB
+    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <% if (psb.registered_customer_code && !isTechUser) { %>
+            <a href="/customers/<%= psb.customer_db_id %>/edit" class="btn btn-success btn-sm fw-bold">
+                <i class="fas fa-id-card me-1"></i>Data Pelanggan Aktif (<%= psb.registered_customer_code %>)
+            </a>
+        <% } %>
+        <% if (!isTechUser) { %>
+            <form action="/psb/<%= psb.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus tiket PSB <%= psb.psb_number %> beserta seluruh foto dokumentasinya?')">
+                <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">
+                    <i class="fas fa-trash-alt me-1"></i>Hapus Tiket PSB
+                </button>
+            </form>
+        <% } %>
+    </div>
+</div>
+
+<!-- ========================================================================== -->
+<!-- 1. KARTU STATUS & 4-STAGE PROGRESS STEPPER TIKET PSB -->
+<!-- ========================================================================== -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary fs-6 px-3 py-1"><%= psb.psb_number %></span>
+                    <% if (psb.status === 'open') { %>
+                        <span class="badge bg-danger fs-6">1. Menunggu Konfirmasi Teknisi</span>
+                    <% } else if (psb.status === 'accepted') { %>
+                        <span class="badge bg-info text-dark fs-6">2. Diterima Teknisi (Menuju Lokasi)</span>
+                    <% } else if (psb.status === 'in_progress') { %>
+                        <span class="badge bg-warning text-dark fs-6">3. Sedang Proses Instalasi</span>
+                    <% } else { %>
+                        <span class="badge bg-success fs-6">4. Pemasangan Selesai & Internet Aktif</span>
+                    <% } %>
+                </div>
+                <h4 class="fw-extrabold text-dark mb-1"><%= psb.customer_name %></h4>
+                <div class="text-muted small">
+                    <i class="fab fa-whatsapp text-success me-1"></i><strong><%= psb.customer_phone %></strong>
+                    • <i class="fas fa-wifi text-primary ms-1 me-1"></i>Paket: <strong><%= psb.package_name || '-' %></strong>
+                    • <i class="far fa-clock ms-1 me-1"></i>Dibuat: <%= moment(psb.created_at).format('DD MMMM YYYY HH:mm') %> WIB
+                </div>
+            </div>
+
+            <div class="text-md-end">
+                <div class="small text-muted">Notifikasi Otomatis Dikirim Ke:</div>
+                <div class="d-flex flex-wrap gap-1 justify-content-md-end mt-1">
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                        <i class="fab fa-whatsapp me-1"></i>Pelanggan: <%= psb.customer_phone %>
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">
+                        <i class="fab fa-whatsapp me-1"></i>Admin: <%= psb.admin_phone || 'Default' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4-Step Visual Tracker -->
+        <div class="row g-2 text-center mt-3 pt-3 border-top">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 1 ? 'bg-danger bg-opacity-10 border-danger' : 'bg-light' %>">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 <%= currentStep >= 1 ? 'bg-danger text-white' : 'bg-secondary text-white' %>" style="width: 40px; height: 40px;">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="fw-bold small text-dark">1. Tiket PSB Dibuat</div>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">
+                        <%= psb.created_at ? moment(psb.created_at).format('DD/MM HH:mm') : '-' %>
+                    </small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 2 ? 'bg-info bg-opacity-10 border-info' : 'bg-light' %>">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 <%= currentStep >= 2 ? 'bg-info text-dark' : 'bg-secondary bg-opacity-25 text-muted' %>" style="width: 40px; height: 40px;">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="fw-bold small text-dark">2. Diterima Teknisi</div>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">
+                        <%= psb.accepted_at ? moment(psb.accepted_at).format('DD/MM HH:mm') : 'Menunggu' %>
+                    </small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 3 ? 'bg-warning bg-opacity-10 border-warning' : 'bg-light' %>">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 <%= currentStep >= 3 ? 'bg-warning text-dark' : 'bg-secondary bg-opacity-25 text-muted' %>" style="width: 40px; height: 40px;">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="fw-bold small text-dark">3. Proses Instalasi</div>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">
+                        <%= psb.in_progress_at ? moment(psb.in_progress_at).format('DD/MM HH:mm') : 'Menunggu' %>
+                    </small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 4 ? 'bg-success bg-opacity-10 border-success' : 'bg-light' %>">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 <%= currentStep >= 4 ? 'bg-success text-white' : 'bg-secondary bg-opacity-25 text-muted' %>" style="width: 40px; height: 40px;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="fw-bold small text-dark">4. Selesai & Aktif</div>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">
+                        <%= psb.completed_at ? moment(psb.completed_at).format('DD/MM HH:mm') : 'Menunggu' %>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ====================================================================== -->
+    <!-- KOLOM KIRI: DATA PELANGGAN BARU & FORM UPDATE PROGRES + FOTO -->
+    <!-- ====================================================================== -->
+    <div class="col-lg-5">
+        <!-- Form Update Progres Pemasangan (Untuk Teknisi & Admin) -->
+        <div class="card border-0 shadow-sm mb-4 border-top border-4 border-primary">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="fas fa-tasks text-primary me-2"></i>Update Progres Pemasangan & Upload Foto
+                </h6>
+                <small class="text-muted">Setiap perubahan progres otomatis mengirim WA + Foto ke Pelanggan Baru & Admin</small>
+            </div>
+            <div class="card-body">
+                <!-- Pilihan Tahap Aksi -->
+                <ul class="nav nav-pills nav-fill gap-1 mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <%= psb.status === 'open' ? 'active' : '' %> btn-sm fw-bold py-2"
+                                data-bs-toggle="pill" data-bs-target="#paneAcceptPsb" type="button">
+                            1. Terima PSB
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <%= (psb.status === 'accepted' || psb.status === 'in_progress') ? 'active' : '' %> btn-sm fw-bold py-2"
+                                data-bs-toggle="pill" data-bs-target="#paneProgressPsb" type="button">
+                            2. Update Progres
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link <%= psb.status === 'completed' ? 'active' : '' %> btn-sm fw-bold py-2"
+                                data-bs-toggle="pill" data-bs-target="#paneCompletePsb" type="button">
+                            3. Selesai Pasang
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- FORM 1: TERIMA TIKET PSB -->
+                    <div class="tab-pane fade <%= psb.status === 'open' ? 'show active' : '' %>" id="paneAcceptPsb">
+                        <form action="/psb/<%= psb.id %>/accept" method="POST" enctype="multipart/form-data">
+                            <% if (!isTechUser) { %>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Teknisi Pelaksana</label>
+                                <select name="technician_id" class="form-select form-select-sm">
+                                    <% technicians.forEach(t => { %>
+                                        <option value="<%= t.id %>" <%= psb.technician_id === t.id ? 'selected' : '' %>><%= t.name %> (<%= t.phone %>)</option>
+                                    <% }) %>
+                                </select>
+                            </div>
+                            <% } %>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Catatan Penerimaan / Estimasi Tiba <span class="text-danger">*</span></label>
+                                <textarea name="note" class="form-control form-control-sm" rows="2" required>Tiket PSB telah diterima. Tim teknisi sedang menuju lokasi pemasangan untuk survey titik ODP dan penarikan kabel.</textarea>
+                            </div>
+                            <div class="mb-3 p-2 bg-light rounded border">
+                                <label class="form-label small fw-bold mb-1">
+                                    <i class="fas fa-camera text-info me-1"></i>Foto Persiapan / Keberangkatan / Survey ODP (Opsional)
+                                </label>
+                                <input type="file" name="photos" class="form-control form-control-sm mb-1" accept="image/*" multiple>
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto">
+                            </div>
+                            <button type="submit" class="btn btn-info text-dark fw-bold w-100">
+                                <i class="fas fa-hand-paper me-1"></i>Terima Tiket PSB & Kirim WA ke Pelanggan + Admin
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- FORM 2: UPDATE PROGRES INSTALASI (+ FOTO PER PROGRES) -->
+                    <div class="tab-pane fade <%= (psb.status === 'accepted' || psb.status === 'in_progress') ? 'show active' : '' %>" id="paneProgressPsb">
+                        <form action="/psb/<%= psb.id %>/progress" method="POST" enctype="multipart/form-data">
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Tahap Pengerjaan Saat Ini <span class="text-danger">*</span></label>
+                                <select name="progress_stage_title" class="form-select form-select-sm" required>
+                                    <option value="Penarikan Kabel Dropcore dari ODP ke Rumah Pelanggan">1. Penarikan Kabel Dropcore dari ODP</option>
+                                    <option value="Splicing Fiber Optik & Pemasangan Roset/Closure">2. Splicing Fiber Optik & Pasang Roset</option>
+                                    <option value="Pemasangan & Konfigurasi Modem ONT / WiFi">3. Pemasangan & Setting Modem ONT / WiFi</option>
+                                    <option value="Pengecekan Redaman Optik & Uji Koneksi (Speedtest)">4. Cek Redaman Optik & Uji Speedtest</option>
+                                    <option value="Tahap Instalasi Lainnya">Tahap Instalasi Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Nama ODP / Port / Redaman</label>
+                                    <input type="text" name="odp_info" class="form-control form-control-sm" value="<%= psb.odp_info || '' %>" placeholder="ODP-01 Port 2 (-18 dBm)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">SN ONT / Modem</label>
+                                    <input type="text" name="onu_serial" class="form-control form-control-sm" value="<%= psb.onu_serial || '' %>" placeholder="ZTEGxxxx">
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Detail Progres Lapangan <span class="text-danger">*</span></label>
+                                <textarea name="note" class="form-control form-control-sm" rows="3" placeholder="Jelaskan progres pengerjaan saat ini di lapangan..." required></textarea>
+                            </div>
+
+                            <div class="mb-3 p-2 bg-light rounded border">
+                                <label class="form-label small fw-bold mb-1">
+                                    <i class="fas fa-camera text-warning me-1"></i>Upload Foto Progres Pengerjaan Ini
+                                </label>
+                                <input type="file" name="photos" class="form-control form-control-sm mb-1" accept="image/*" multiple>
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Contoh: Foto penarikan kabel / Foto hasil redaman OPM">
+                            </div>
+
+                            <button type="submit" class="btn btn-warning text-dark fw-bold w-100">
+                                <i class="fas fa-paper-plane me-1"></i>Update Progres & Kirim WA + Foto ke Pelanggan & Admin
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- FORM 3: SELESAIKAN PEMASANGAN BARU -->
+                    <div class="tab-pane fade <%= psb.status === 'completed' ? 'show active' : '' %>" id="paneCompletePsb">
+                        <form action="/psb/<%= psb.id %>/complete" method="POST" enctype="multipart/form-data">
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">ODP / Redaman Akhir</label>
+                                    <input type="text" name="odp_info" class="form-control form-control-sm" value="<%= psb.odp_info || '' %>" placeholder="ODP-01 (-18.2 dBm)">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">SN Modem / ONT</label>
+                                    <input type="text" name="onu_serial" class="form-control form-control-sm" value="<%= psb.onu_serial || '' %>" placeholder="SN Perangkat">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Username PPPoE</label>
+                                    <input type="text" name="pppoe_username" class="form-control form-control-sm" value="<%= psb.pppoe_username || '' %>" placeholder="Username PPPoE">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Password PPPoE / IP</label>
+                                    <input type="text" name="pppoe_password" class="form-control form-control-sm" value="<%= psb.pppoe_password || '' %>" placeholder="Password PPPoE">
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Catatan Penyelesaian Pemasangan <span class="text-danger">*</span></label>
+                                <textarea name="note" class="form-control form-control-sm" rows="2" required>Pemasangan baru telah selesai 100%. Perangkat ONT menyala normal, redaman optik stabil, dan koneksi internet sudah aktif.</textarea>
+                            </div>
+
+                            <div class="mb-2 p-2 bg-light rounded border">
+                                <label class="form-label small fw-bold mb-1">
+                                    <i class="fas fa-camera text-success me-1"></i>Upload Foto Bukti Selesai Pasang (Modem Menyala / Speedtest / Rumah)
+                                </label>
+                                <input type="file" name="photos" class="form-control form-control-sm mb-1" accept="image/*" multiple>
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Contoh: Foto modem ONT aktif & hasil speedtest">
+                            </div>
+
+                            <% if (!psb.customer_db_id) { %>
+                            <div class="form-check bg-success bg-opacity-10 p-2 px-3 rounded border border-success mb-3">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" name="register_to_customers" value="1" id="chkDetailAutoReg" checked>
+                                <label class="form-check-label small fw-bold text-success" for="chkDetailAutoReg">
+                                    Otomatis daftarkan ke Data Pelanggan Aktif (Generate ID <code>CUST-XXXX</code>)
+                                </label>
+                            </div>
+                            <% } %>
+
+                            <button type="submit" class="btn btn-success fw-bold w-100">
+                                <i class="fas fa-check-circle me-1"></i>Tandai Pemasangan Selesai & Kirim WA ke Pelanggan + Admin
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informasi Lengkap Calon Pelanggan Baru -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-info-circle text-primary me-2"></i>Data Lengkap Pemasangan Baru</h6>
+            </div>
+            <div class="card-body small">
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Nama Pelanggan Baru:</span>
+                    <strong class="text-dark"><%= psb.customer_name %></strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Nomor WhatsApp:</span>
+                    <a href="https://wa.me/<%= psb.customer_phone.replace(/^0/, '62') %>" target="_blank" class="fw-bold text-success text-decoration-none">
+                        <i class="fab fa-whatsapp me-1"></i><%= psb.customer_phone %>
+                    </a>
+                </div>
+                <div class="mb-2 pb-2 border-bottom">
+                    <span class="text-muted d-block">Alamat Pemasangan:</span>
+                    <strong class="text-dark"><%= psb.customer_address || '-' %></strong>
+                    <% if (psb.latitude && psb.longitude) { %>
+                        <div class="mt-1">
+                            <a href="https://www.google.com/maps?q=<%= psb.latitude %>,<%= psb.longitude %>" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size: 0.72rem;">
+                                <i class="fas fa-map-marked-alt me-1"></i>Buka Titik Google Maps (<%= psb.latitude %>, <%= psb.longitude %>)
+                            </a>
+                        </div>
+                    <% } %>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Paket Internet:</span>
+                    <strong class="text-primary"><%= psb.package_name || '-' %></strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Biaya Pemasangan:</span>
+                    <strong class="text-dark"><%= formatRupiah(psb.installation_fee) %></strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Teknisi Bertugas:</span>
+                    <strong class="text-dark"><%= psb.technician_name || '-' %> (<%= psb.technician_phone || '-' %>)</strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">Info ODP / Redaman:</span>
+                    <strong class="text-dark"><%= psb.odp_info || '-' %></strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">SN ONT / Modem:</span>
+                    <strong class="text-dark"><code><%= psb.onu_serial || '-' %></code></strong>
+                </div>
+                <div class="mb-2 pb-2 border-bottom d-flex justify-content-between">
+                    <span class="text-muted">PPPoE / IP:</span>
+                    <strong class="text-dark"><code><%= psb.pppoe_username || psb.ip_address || '-' %></code></strong>
+                </div>
+                <div>
+                    <span class="text-muted d-block">Catatan Awal:</span>
+                    <div class="p-2 bg-light rounded border mt-1"><%= psb.notes || '-' %></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================================================================== -->
+    <!-- KOLOM KANAN: TIMELINE RIWAYAT PROGRES & FOTO DOKUMENTASI PER PROGRES -->
+    <!-- ====================================================================== -->
+    <div class="col-lg-7">
+        <!-- Timeline Progres Pemasangan -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-stream text-primary me-2"></i>Timeline Riwayat Progres & Foto per Tahap
+                    </h6>
+                    <small class="text-muted">Pantauan real-time tahapan pengerjaan teknisi di lapangan</small>
+                </div>
+                <span class="badge bg-primary rounded-pill"><%= logs.length %> Tahapan</span>
+            </div>
+            <div class="card-body">
+                <% if (logs.length === 0) { %>
+                    <div class="text-center text-muted py-4">Belum ada riwayat progres.</div>
+                <% } else { %>
+                    <div class="position-relative ps-3 border-start border-2 border-primary ms-2">
+                        <% logs.forEach(log => {
+                            const logPhotos = photosByLog[log.id] || [];
+                            const badgeColor = log.status === 'completed' ? 'bg-success' : (log.status === 'in_progress' ? 'bg-warning text-dark' : (log.status === 'accepted' ? 'bg-info text-dark' : 'bg-danger'));
+                        %>
+                        <div class="mb-4 position-relative">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge <%= badgeColor %>"><%= log.status.toUpperCase() %></span>
+                                    <strong class="text-dark"><%= log.title %></strong>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="far fa-clock me-1"></i><%= moment(log.created_at).format('DD MMM YYYY HH:mm') %> WIB
+                                </small>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 border small mb-2" style="white-space: pre-line;"><%= log.description %></div>
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted mb-2">
+                                <span><i class="fas fa-user-check me-1"></i>Oleh: <strong><%= log.actor_name || 'Sistem' %></strong></span>
+                                <div class="d-flex gap-2">
+                                    <% if (log.wa_customer_sent) { %>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                            <i class="fab fa-whatsapp me-1"></i>WA Pelanggan Terkirim
+                                        </span>
+                                    <% } %>
+                                    <% if (log.wa_admin_sent) { %>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary">
+                                            <i class="fab fa-whatsapp me-1"></i>WA Admin Terkirim
+                                        </span>
+                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Foto yang Dilampirkan pada Progres Ini -->
+                            <% if (logPhotos.length > 0) { %>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <% logPhotos.forEach(ph => { %>
+                                    <a href="<%= ph.file_path %>" target="_blank" class="text-decoration-none">
+                                        <div class="border rounded-3 overflow-hidden bg-white shadow-xs" style="width: 130px;">
+                                            <img src="<%= ph.file_path %>" alt="Foto Progres" style="width: 130px; height: 95px; object-fit: cover;">
+                                            <div class="p-1 text-truncate text-dark" style="font-size: 0.68rem;">
+                                                <i class="fas fa-camera text-primary me-1"></i><%= ph.caption || 'Foto Progres' %>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Galeri Semua Foto Pemasangan Ini -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-camera-retro text-success me-2"></i>Seluruh Foto Dokumentasi Tiket PSB Ini (<%= photos.length %>)
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (photos.length === 0) { %>
+                    <div class="text-center py-4 text-muted small">
+                        <i class="fas fa-images fa-2x opacity-25 mb-2 d-block"></i>
+                        Belum ada foto dokumentasi pada tiket PSB ini.
+                    </div>
+                <% } else { %>
+                    <div class="row g-3">
+                        <% photos.forEach(ph => { %>
+                        <div class="col-6 col-md-4">
+                            <div class="card h-100 border shadow-xs">
+                                <a href="<%= ph.file_path %>" target="_blank">
+                                    <img src="<%= ph.file_path %>" class="card-img-top" alt="Foto PSB" style="height: 145px; object-fit: cover;">
+                                </a>
+                                <div class="card-body p-2">
+                                    <span class="badge bg-primary mb-1" style="font-size: 0.65rem;"><%= ph.stage.toUpperCase() %></span>
+                                    <div class="small fw-semibold text-dark text-truncate"><%= ph.caption || 'Foto PSB' %></div>
+                                    <small class="text-muted d-block" style="font-size: 0.68rem;">
+                                        <%= ph.uploaded_by %> • <%= moment(ph.created_at).format('DD/MM HH:mm') %>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,524 @@
+<%- include('partials/header', { title: 'GenieACS - Manajemen CPE & Remote ONT', activePage: 'genieacs' }) %>
+
+<div class="container-fluid px-0">
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark">
+                <i class="fas fa-microchip text-primary me-2"></i>GenieACS - Remote ONT & CPE Management
+            </h4>
+            <p class="text-muted mb-0 small">
+                Monitoring status sinyal optik, kontrol remote WiFi (Ganti SSID & Password), reboot ONT, dan konfigurasi TR-069.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm px-3" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Refresh Data
+            </button>
+            <a href="/settings" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="fas fa-cog me-1"></i>Pengaturan ACS
+            </a>
+        </div>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+        <!-- GenieACS Error -->
+        <div class="card shadow-sm border-danger mb-4">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                <h5 class="fw-bold text-dark">GenieACS Tidak Dapat Dijangkau</h5>
+                <p class="text-muted mb-3"><%= error %></p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="fas fa-redo me-1"></i>Coba Lagi
+                    </button>
+                    <a href="/settings" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog me-1"></i>Periksa URL GenieACS
+                    </a>
+                </div>
+            </div>
+        </div>
+    <% } else if (!devices || devices.length === 0) { %>
+        <!-- No Devices -->
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-microchip fa-4x text-muted mb-3"></i>
+                <h5 class="fw-bold text-dark">Belum Ada Perangkat di GenieACS</h5>
+                <p class="text-muted">Pastikan ONT pelanggan telah dikonfigurasi Inform URL mengarah ke GenieACS ini.</p>
+            </div>
+        </div>
+    <% } else { %>
+        <!-- Summary Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-primary-subtle text-primary p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-microchip fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total ONT Terdaftar</small>
+                            <h4 class="fw-bold mb-0 text-dark"><%= stats ? stats.total : devices.length %></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-success-subtle text-success p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-wifi fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">ONT Online (< 24 Jam)</small>
+                            <h4 class="fw-bold mb-0 text-success"><%= stats ? stats.online : 0 %></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-info-subtle text-info p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-user-check fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Tertaut Pelanggan</small>
+                            <h4 class="fw-bold mb-0 text-info"><%= stats ? stats.linked : 0 %></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-danger-subtle text-danger p-3 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-wave-square fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Redaman Kritis (< -27 dBm)</small>
+                            <h4 class="fw-bold mb-0 text-danger"><%= stats ? stats.criticalOptical : 0 %></h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices Table Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="fas fa-list text-primary me-2"></i>Daftar Perangkat ONT / Router
+                    <span class="badge bg-primary ms-2"><%= devices.length %> Unit</span>
+                </h6>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">Status Indikator:</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-circle text-success me-1" style="font-size: 0.5rem;"></i>Online</span>
+                    <span class="badge badge-offline-blinking"><i class="fas fa-circle indicator-offline-blinking me-1" style="font-size: 0.5rem;"></i>Offline</span>
+                </div>
+            </div>
+
+            <div class="card-body p-3 p-md-4">
+                <table class="table table-hover align-middle datatable w-100" id="ontDevicesTable" style="width: 100%;">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="4%">No</th>
+                            <th width="16%">Perangkat (ONT)</th>
+                            <th width="14%">Serial Number</th>
+                            <th width="16%">Pelanggan Terkait</th>
+                            <th width="14%">Nama WiFi (SSID)</th>
+                            <th width="12%">IP WAN / PPPoE</th>
+                            <th width="10%">Redaman (RX)</th>
+                            <th width="14%" class="text-center">Aksi Remote</th>
+                        </tr>
+                    </thead>
+                        <tbody>
+                            <% devices.forEach(function(dev, idx) { %>
+                                <tr>
+                                    <td class="text-center text-muted"><%= idx + 1 %></td>
+                                    
+                                    <!-- Device Info -->
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <% if (dev.isOnline) { %>
+                                                <i class="fas fa-circle text-success" title="Online (Inform < 24 jam)" style="font-size: 0.65rem;"></i>
+                                            <% } else { %>
+                                                <i class="fas fa-circle indicator-offline-blinking" title="Offline (Tidak merespon > 24 jam)" style="font-size: 0.65rem;"></i>
+                                            <% } %>
+                                            <div>
+                                                <a href="/genieacs/devices/<%= encodeURIComponent(dev.id) %>" class="fw-bold text-primary text-decoration-none d-block">
+                                                    <%= dev.model %>
+                                                </a>
+                                                <small class="text-muted" style="font-size: 0.74rem;">
+                                                    <%= dev.manufacturer %> &bull; <%= dev.lastInformDate ? dev.lastInformDate.toLocaleDateString('id-ID') : '-' %>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Serial Number -->
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <code class="fw-bold text-dark"><%= dev.serial %></code>
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-muted btn-copy-sn" data-sn="<%= dev.serial %>" title="Salin Serial Number">
+                                                <i class="far fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                    <!-- Linked Customer -->
+                                    <td>
+                                        <% if (dev.customer) { %>
+                                            <div>
+                                                <a href="/customers/<%= dev.customer.id %>/edit" class="fw-bold text-dark text-decoration-none">
+                                                    <i class="fas fa-user-check text-success me-1"></i><%= dev.customer.name %>
+                                                </a>
+                                                <small class="text-muted d-block" style="font-size: 0.72rem;">
+                                                    <%= dev.customer.customer_id %> &bull; <%= dev.customer.package_name || 'Reguler' %>
+                                                </small>
+                                            </div>
+                                        <% } else { %>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 btn-open-link-modal" 
+                                                    data-device-id="<%= dev.id %>" data-serial="<%= dev.serial %>" style="font-size: 0.74rem;">
+                                                <i class="fas fa-plus me-1"></i>Tautkan Pelanggan
+                                            </button>
+                                        <% } %>
+                                    </td>
+
+                                    <!-- WiFi SSID -->
+                                    <td>
+                                        <div>
+                                            <% if (dev.wifi.ssid && dev.wifi.ssid !== '-') { %>
+                                                <span class="fw-semibold text-dark text-truncate d-block" style="max-width: 140px;" title="<%= dev.wifi.ssid %>">
+                                                    <i class="fas fa-wifi text-primary me-1"></i><%= dev.wifi.ssid %>
+                                                </span>
+                                                <small class="text-muted" style="font-size: 0.72rem;">
+                                                    Pass: 
+                                                    <% if (dev.wifi.password) { %>
+                                                        <code><%= dev.wifi.password %></code>
+                                                    <% } else { %>
+                                                        <span class="fst-italic text-muted">Tersimpan di ONT</span>
+                                                    <% } %>
+                                                </small>
+                                            <% } else { %>
+                                                <span class="text-muted fst-italic" style="font-size: 0.76rem;">Belum sinkron</span>
+                                            <% } %>
+                                        </div>
+                                    </td>
+
+                                    <!-- WAN / PPPoE -->
+                                    <td>
+                                        <div class="font-monospace small">
+                                            <span class="fw-semibold text-dark"><%= dev.wan.ip !== '-' ? dev.wan.ip : '-' %></span>
+                                            <% if (dev.wan.username && dev.wan.username !== '-') { %>
+                                                <small class="text-muted d-block font-sans-serif" style="font-size: 0.72rem;">
+                                                    User: <strong class="text-primary"><%= dev.wan.username %></strong>
+                                                </small>
+                                            <% } %>
+                                        </div>
+                                    </td>
+
+                                    <!-- Optical RX Power -->
+                                    <td>
+                                        <% if (dev.optical.opticalStatus === 'normal') { %>
+                                            <span class="badge bg-success" title="Sinyal Bagus">
+                                                <i class="fas fa-check-circle me-1"></i><%= dev.optical.rxPower %> dBm
+                                            </span>
+                                        <% } else if (dev.optical.opticalStatus === 'warning') { %>
+                                            <span class="badge bg-warning text-dark" title="Sinyal Mulai Redam">
+                                                <i class="fas fa-exclamation-triangle me-1"></i><%= dev.optical.rxPower %> dBm
+                                            </span>
+                                        <% } else if (dev.optical.opticalStatus === 'critical') { %>
+                                            <span class="badge bg-danger" title="Redaman Tinggi / Kritis!">
+                                                <i class="fas fa-times-circle me-1"></i><%= dev.optical.rxPower %> dBm
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary text-white" title="Belum Terbaca">
+                                                <%= dev.optical.rxRaw || '-' %>
+                                            </span>
+                                        <% } %>
+                                    </td>
+
+                                    <!-- Action Buttons -->
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Tombol Remote Device Detail -->
+                                            <a href="/genieacs/devices/<%= encodeURIComponent(dev.id) %>" class="btn btn-outline-primary" title="Buka Remote Device & Diagnostik Lengkap">
+                                                <i class="fas fa-sliders-h"></i>
+                                            </a>
+
+                                            <!-- Tombol Modal Cepat Ganti WiFi -->
+                                            <button type="button" class="btn btn-outline-success btn-quick-wifi" 
+                                                    data-device-id="<%= dev.id %>"
+                                                    data-device-model="<%= dev.model %>"
+                                                    data-device-serial="<%= dev.serial %>"
+                                                    data-device-ssid="<%= dev.wifi.ssid !== '-' ? dev.wifi.ssid : '' %>"
+                                                    data-device-pass="<%= dev.wifi.password || '' %>"
+                                                    title="Ganti Nama WiFi & Password Cepat">
+                                                <i class="fas fa-wifi"></i>
+                                            </button>
+
+                                            <!-- Tombol Reboot -->
+                                            <form action="/genieacs/devices/<%= encodeURIComponent(dev.id) %>/reboot" method="POST" class="d-inline">
+                                                <button type="button" class="btn btn-outline-warning text-dark btn-reboot" title="Reboot ONT">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </form>
+
+                                            <!-- Tombol Refresh / Sinkron -->
+                                            <form action="/genieacs/devices/<%= encodeURIComponent(dev.id) %>/refresh" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-outline-info" title="Sinkronkan Parameter dari ONT">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </form>
+
+                                            <!-- Tombol Hapus -->
+                                            <form action="/genieacs/devices/<%= encodeURIComponent(dev.id) %>/delete" method="POST" class="d-inline">
+                                                <button type="button" class="btn btn-outline-danger btn-delete" title="Hapus dari GenieACS">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL CEPAT: GANTI WIFI (SSID & PASSWORD) -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalQuickWifi" tabindex="-1" aria-labelledby="modalQuickWifiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-success text-white py-3">
+                <h6 class="modal-title fw-bold" id="modalQuickWifiLabel">
+                    <i class="fas fa-wifi me-2"></i>Remote Ganti WiFi ONT (SSID & Password)
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="" method="POST" id="formQuickWifi">
+                <div class="modal-body p-4">
+                    <div class="p-2 mb-3 bg-light rounded border">
+                        <small class="text-muted d-block">Perangkat Target:</small>
+                        <strong id="qwModel" class="text-dark">ONT Model</strong> &bull;
+                        SN: <code id="qwSerial" class="text-primary">SN12345</code>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="qw_ssid" class="form-label fw-bold text-dark">
+                            Nama WiFi Baru (SSID) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-wifi text-primary"></i></span>
+                            <input type="text" class="form-control" id="qw_ssid" name="ssid" placeholder="Contoh: MyWifi-Rumah" required minlength="2" maxlength="32">
+                        </div>
+                        <div class="form-text small">Nama sinyal WiFi yang dipancarkan ONT.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="qw_password" class="form-label fw-bold text-dark">
+                            Password WiFi Baru (WPA/WPA2 Key) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-lock text-warning"></i></span>
+                            <input type="text" class="form-control font-monospace" id="qw_password" name="password" placeholder="Minimal 8 karakter" required minlength="8" maxlength="63">
+                            <button class="btn btn-outline-secondary" type="button" id="qwToggleEye">
+                                <i class="fas fa-eye" id="qwEyeIcon"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" type="button" id="qwGenPass">
+                                <i class="fas fa-random me-1"></i>Acak
+                            </button>
+                        </div>
+                        <div class="form-text small">Panjang minimal 8 karakter.</div>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>Perintah akan langsung dikirimkan ke ONT via TR-069.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success btn-sm px-4 fw-bold">
+                        <i class="fas fa-paper-plane me-1"></i>Terapkan ke ONT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL CEPAT: TAUTKAN KE PELANGGAN -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalLinkCustomer" tabindex="-1" aria-labelledby="modalLinkCustomerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold" id="modalLinkCustomerLabel">
+                    <i class="fas fa-link me-2"></i>Tautkan ONT ke Data Pelanggan
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="" method="POST" id="formLinkCustomer">
+                <input type="hidden" name="serial" id="lcSerialInput">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Serial Number ONT:</label>
+                        <h5 class="fw-bold text-dark font-monospace" id="lcSerialDisplay"></h5>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="lc_customer_id" class="form-label fw-bold text-dark">
+                            Pilih Pelanggan <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="lc_customer_id" name="customer_id" required>
+                            <option value="">-- Pilih Pelanggan --</option>
+                            <% (customers || []).forEach(function(c) { %>
+                                <option value="<%= c.id %>"><%= c.customer_id %> - <%= c.name %> (<%= c.phone || 'No Telp' %>)</option>
+                            <% }); %>
+                        </select>
+                        <div class="form-text small">Serial number ONT akan disimpan ke profil pelanggan tersebut.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">
+                        <i class="fas fa-check me-1"></i>Simpan Tautan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Salin Serial Number
+    document.querySelectorAll('.btn-copy-sn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const sn = this.getAttribute('data-sn');
+            if (!sn) return;
+            navigator.clipboard.writeText(sn).then(function() {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Serial Number disalin: ' + sn,
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            });
+        });
+    });
+
+    // 2. Modal Quick WiFi
+    const modalQuickWifiEl = document.getElementById('modalQuickWifi');
+    const modalQuickWifi = modalQuickWifiEl ? new bootstrap.Modal(modalQuickWifiEl) : null;
+    const formQuickWifi = document.getElementById('formQuickWifi');
+    const qwModel = document.getElementById('qwModel');
+    const qwSerial = document.getElementById('qwSerial');
+    const qwSsid = document.getElementById('qw_ssid');
+    const qwPass = document.getElementById('qw_password');
+    const qwToggleEye = document.getElementById('qwToggleEye');
+    const qwEyeIcon = document.getElementById('qwEyeIcon');
+    const qwGenPass = document.getElementById('qwGenPass');
+
+    document.querySelectorAll('.btn-quick-wifi').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const devId = this.getAttribute('data-device-id');
+            const model = this.getAttribute('data-device-model');
+            const serial = this.getAttribute('data-device-serial');
+            const ssid = this.getAttribute('data-device-ssid');
+            const pass = this.getAttribute('data-device-pass');
+
+            formQuickWifi.action = '/genieacs/devices/' + encodeURIComponent(devId) + '/wifi';
+            qwModel.textContent = model || 'ONT';
+            qwSerial.textContent = serial || devId;
+            qwSsid.value = ssid || '';
+            qwPass.value = pass || '';
+
+            if (modalQuickWifi) modalQuickWifi.show();
+        });
+    });
+
+    if (qwToggleEye && qwPass) {
+        qwToggleEye.addEventListener('click', function() {
+            if (qwPass.type === 'password') {
+                qwPass.type = 'text';
+                qwEyeIcon.classList.remove('fa-eye');
+                qwEyeIcon.classList.add('fa-eye-slash');
+            } else {
+                qwPass.type = 'password';
+                qwEyeIcon.classList.remove('fa-eye-slash');
+                qwEyeIcon.classList.add('fa-eye');
+            }
+        });
+    }
+
+    if (qwGenPass && qwPass) {
+        qwGenPass.addEventListener('click', function() {
+            const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let res = '';
+            for (let i = 0; i < 10; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            qwPass.value = res;
+            qwPass.type = 'text';
+            if (qwEyeIcon) {
+                qwEyeIcon.classList.remove('fa-eye');
+                qwEyeIcon.classList.add('fa-eye-slash');
+            }
+        });
+    }
+
+    // 3. Modal Tautkan Pelanggan
+    const modalLinkEl = document.getElementById('modalLinkCustomer');
+    const modalLink = modalLinkEl ? new bootstrap.Modal(modalLinkEl) : null;
+    const formLink = document.getElementById('formLinkCustomer');
+    const lcSerialInput = document.getElementById('lcSerialInput');
+    const lcSerialDisplay = document.getElementById('lcSerialDisplay');
+
+    document.querySelectorAll('.btn-open-link-modal').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const devId = this.getAttribute('data-device-id');
+            const serial = this.getAttribute('data-serial');
+
+            formLink.action = '/genieacs/devices/' + encodeURIComponent(devId) + '/link-customer';
+            lcSerialInput.value = serial || '';
+            lcSerialDisplay.textContent = serial || devId;
+
+            if (modalLink) modalLink.show();
+        });
+    });
+
+    // 4. Konfirmasi Reboot
+    document.querySelectorAll('.btn-reboot').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            Swal.fire({
+                title: 'Reboot ONT?',
+                text: 'Perangkat ONT akan di-reboot. Pelanggan akan terputus sesaat hingga perangkat menyala kembali.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Reboot!',
+                cancelButtonText: 'Batal'
+            }).then(function(result) {
+                if (result.isConfirmed) form.submit();
+            });
+        });
+    });
+});
+</script>
+
+<%- include('partials/footer') %>

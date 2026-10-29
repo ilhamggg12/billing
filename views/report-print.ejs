@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Laporan Rekapitulasi Pembayaran | <%= companyName %></title>
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3.2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.5 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-size: 11px;
+        }
+
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #ffffff;
+            border-bottom: 1px solid #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 10px 24px;
+        }
+
+        .report-paper {
+            max-width: 1100px;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 30px;
+        }
+
+        .kop-wrapper {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 16px;
+        }
+
+        .kop-logo {
+            height: 60px;
+            max-height: 70px;
+            max-width: 160px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .kop-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .kop-subtitle {
+            font-size: 0.76rem;
+            color: #475569;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        .report-heading {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .report-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .report-meta {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .summary-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+        }
+
+        .summary-card-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+
+        .summary-card-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .method-badge-sm {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .table-report {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.76rem;
+            margin-bottom: 16px;
+        }
+
+        .table-report th {
+            background-color: #f1f5f9 !important;
+            color: #334155;
+            font-weight: 700;
+            border: 1px solid #cbd5e1;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .table-report td {
+            border: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+
+        .table-report tbody tr:nth-child(even) {
+            background-color: #f8fafc !important;
+        }
+
+        .table-report tfoot tr {
+            background-color: #f1f5f9 !important;
+            font-weight: 800;
+            border-top: 2px solid #0f172a;
+        }
+
+        .signature-box {
+            margin-top: 24px;
+            page-break-inside: avoid;
+        }
+
+        .signature-line {
+            width: 160px;
+            border-bottom: 1px solid #475569;
+            margin-top: 50px;
+            margin-bottom: 4px;
+        }
+
+        @media print {
+            .print-toolbar {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+            }
+            .report-paper {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            .table-report th {
+                background-color: #e2e8f0 !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+            .table-report tbody tr:nth-child(even) {
+                background-color: #f8fafc !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Top Toolbar (Screen View Only) -->
+    <div class="print-toolbar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary px-3 py-2 fs-6">
+                <i class="fas fa-file-invoice-dollar me-1"></i>Rekap Pembayaran
+            </span>
+            <span class="text-secondary small">
+                Periode: <strong><%= moment(filters.startDate).format('DD/MM/YYYY') %> - <%= moment(filters.endDate).format('DD/MM/YYYY') %></strong>
+                <% if (filters.selectedMethod && filters.selectedMethod !== 'all') { %>
+                    | Metode: <span class="badge bg-secondary"><%= filters.selectedMethod %></span>
+                <% } %>
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                <i class="fas fa-arrow-left me-1"></i>Kembali
+            </button>
+            <a href="/reports/pdf?<%= new URLSearchParams({ start_date: filters.startDate, end_date: filters.endDate, payment_method: filters.selectedMethod }).toString() %>" class="btn btn-danger btn-sm">
+                <i class="fas fa-file-pdf me-1"></i>Download PDF
+            </a>
+            <button class="btn btn-primary btn-sm" onclick="window.print()">
+                <i class="fas fa-print me-1"></i>Cetak Sekarang (Print)
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable Paper Area -->
+    <div class="report-paper">
+        <!-- Kop Surat Perusahaan -->
+        <div class="kop-wrapper d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <% if (companyLogo) { %>
+                    <img src="<%= companyLogo %>" alt="Logo" class="kop-logo">
+                <% } else { %>
+                    <div class="brand-icon-box bg-primary text-white rounded p-2 text-center" style="width: 48px; height: 48px;">
+                        <i class="fas fa-network-wired fa-2x"></i>
+                    </div>
+                <% } %>
+                <div>
+                    <h1 class="kop-title"><%= companyName %></h1>
+                    <div class="kop-subtitle mt-1">
+                        <%= companyAddress %>
+                        <% if (companyPhone) { %> | Telp/WA: <%= companyPhone %><% } %>
+                    </div>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="fw-bold text-dark" style="font-size: 0.85rem;">DIVISI KEUANGAN & BILLING</div>
+                <div class="text-muted small">ISP & Internet Service Provider</div>
+            </div>
+        </div>
+
+        <!-- Judul Laporan -->
+        <div class="report-heading">
+            <div class="report-title">LAPORAN REKAPITULASI PEMBAYARAN PELANGGAN</div>
+            <div class="report-meta">
+                <span>Periode: <strong><%= moment(filters.startDate).format('DD MMMM YYYY') %> s/d <%= moment(filters.endDate).format('DD MMMM YYYY') %></strong></span>
+                <span class="mx-2">•</span>
+                <span>Metode: <strong><%= filters.selectedMethod === 'all' ? 'Semua Metode Pembayaran' : filters.selectedMethod %></strong></span>
+            </div>
+        </div>
+
+        <!-- Ringkasan Eksekutif (Summary Box) -->
+        <div class="summary-box">
+            <div class="row g-2 align-items-center">
+                <div class="col-3 border-end">
+                    <div class="summary-card-title">Total Penerimaan</div>
+                    <div class="summary-card-value text-success"><%= formatRupiah(stats.totalRevenue) %></div>
+                </div>
+                <div class="col-2 border-end">
+                    <div class="summary-card-title">Total Transaksi</div>
+                    <div class="summary-card-value text-primary"><%= stats.totalTransactions %> <span class="fs-6 fw-normal text-muted">Kuitansi</span></div>
+                </div>
+                <div class="col-2 border-end">
+                    <div class="summary-card-title">Rata-rata / Trx</div>
+                    <div class="summary-card-value text-dark" style="font-size: 0.95rem;"><%= formatRupiah(stats.averagePayment) %></div>
+                </div>
+                <div class="col-5">
+                    <div class="summary-card-title">Rincian Saldo Masuk per Saluran:</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <% Object.keys(methodBreakdown).forEach(function(m) { %>
+                            <% if (methodBreakdown[m].count > 0 || filters.selectedMethod === 'all') { %>
+                            <span class="badge bg-light text-dark border" style="font-size: 0.68rem; font-weight: 600;">
+                                <%= m %>: <strong><%= formatRupiah(methodBreakdown[m].total) %></strong> (<%= methodBreakdown[m].count %>)
+                            </span>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Rincian Pembayaran -->
+        <table class="table-report">
+            <thead>
+                <tr>
+                    <th width="30" class="text-center">No</th>
+                    <th width="115">No. Invoice</th>
+                    <th width="75">Periode</th>
+                    <th width="110">Tgl & Waktu Bayar</th>
+                    <th width="90">ID Pelanggan</th>
+                    <th>Nama Pelanggan</th>
+                    <th width="110">Paket Layanan</th>
+                    <th width="85">Metode</th>
+                    <th width="110" class="text-end">Jumlah</th>
+                    <th width="80">Penerima</th>
+                    <th width="110">Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (payments && payments.length > 0) { %>
+                    <% payments.forEach(function(p, idx) { %>
+                        <tr>
+                            <td class="text-center"><%= idx + 1 %></td>
+                            <td class="fw-semibold text-dark"><%= p.invoice_number %></td>
+                            <td><%= p.invoice_period %></td>
+                            <td><%= moment(p.payment_date).format('DD/MM/YYYY HH:mm') %></td>
+                            <td><%= p.customer_code || '-' %></td>
+                            <td>
+                                <strong><%= p.customer_name %></strong>
+                            </td>
+                            <td><%= p.package_name || '-' %></td>
+                            <td>
+                                <% 
+                                    let badgeColor = 'bg-secondary text-white';
+                                    const m = (p.payment_method || '').toUpperCase();
+                                    if (m.includes('BCA')) badgeColor = 'bg-primary text-white';
+                                    else if (m.includes('BRI')) badgeColor = 'bg-info text-white';
+                                    else if (m.includes('DANA')) badgeColor = 'bg-info text-dark';
+                                    else if (m.includes('QRIS')) badgeColor = 'bg-dark text-white';
+                                    else if (m.includes('SPAY')) badgeColor = 'bg-warning text-dark';
+                                    else if (m.includes('CASH') || m.includes('TUNAI')) badgeColor = 'bg-success text-white';
+                                %>
+                                <span class="badge <%= badgeColor %>" style="font-size: 0.65rem;">
+                                    <%= p.payment_method %>
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold text-dark"><%= formatRupiah(p.amount) %></td>
+                            <td><%= p.received_by || '-' %></td>
+                            <td class="text-muted" style="font-size: 0.7rem;"><%= p.payment_notes || '-' %></td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-muted">
+                            <em>Tidak ada data pembayaran pada rentang tanggal dan kriteria filter yang dipilih.</em>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="8" class="text-end text-uppercase">TOTAL PENERIMAAN KESELURUHAN:</td>
+                    <td class="text-end text-success fs-6"><%= formatRupiah(stats.totalRevenue) %></td>
+                    <td colspan="2" class="text-muted small"><%= stats.totalTransactions %> Transaksi</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Tanda Tangan & Pengesahan -->
+        <div class="signature-box">
+            <div class="row align-items-end text-center">
+                <div class="col-4">
+                    <div class="text-muted small mb-1">Dicetak pada: <%= printedAt %></div>
+                    <div class="fw-semibold text-dark">Dibuat Oleh,</div>
+                    <div class="signature-line mx-auto"></div>
+                    <div class="fw-bold text-dark">( <%= printedBy %> )</div>
+                    <div class="text-muted small">Admin / Kasir Billing</div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="p-2 border rounded bg-light small text-muted d-inline-block">
+                        <i class="fas fa-shield-alt text-success me-1"></i>Dokumen Rekapan Resmi Sistem<br>
+                        <strong><%= companyName %></strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted small mb-1">Bandung, <%= moment().format('DD MMMM YYYY') %></div>
+                    <div class="fw-semibold text-dark">Mengetahui,</div>
+                    <div class="signature-line mx-auto"></div>
+                    <div class="fw-bold text-dark">( Pimpinan / Manajemen )</div>
+                    <div class="text-muted small">PT. Lintas Jaringan Nusantara</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <% if (typeof isPdf === 'undefined' || !isPdf) { %>
+    <!-- Auto Print Script pada Mode Web Print -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            // Tunggu styling termuat sempurna sebelum membuka dialog print otomatis
+            setTimeout(function() {
+                window.print();
+            }, 600);
+        });
+    </script>
+    <% } %>
+
+</body>
+</html>

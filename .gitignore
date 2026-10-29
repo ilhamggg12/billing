@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables & secrets
+.env
+
+# Database & SQLite files (mengandung data sensitif pelanggan & router)
+database/*.db
+database/*.db-wal
+database/*.db-shm
+database/pre-*.db
+
+# Uploads file pengguna (bukti transfer, lampiran tiket & psb)
+database/uploads/*
+!database/uploads/.gitkeep
+public/uploads/psb/*
+!public/uploads/psb/.gitkeep
+public/uploads/tickets/*
+!public/uploads/tickets/.gitkeep
+
+# WhatsApp Web Session & Cache
+whatsapp-session/
+.wwebjs_cache/
+.wwebjs_auth/
+public/wa-debug.png
+
+# Scratch / Test scripts
+scratch_*.js
+test_*.js
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

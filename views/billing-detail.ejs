@@ -1,0 +1,261 @@
+<%- include('partials/header', { title: 'Detail Tagihan', activePage: 'billing' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Invoice: <%= invoice.invoice_number %></h4>
+        <p class="text-muted mb-0">Rincian status tagihan dan pembayaran</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/billing" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+        <a href="/billing/<%= invoice.id %>/print" target="_blank" class="btn btn-primary shadow-sm">
+            <i class="fas fa-print me-1"></i>Cetak Invoice
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Invoice Card -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="/img/logo.png" alt="Logo LJN" style="height: 52px; max-height: 60px; max-width: 140px; width: auto; object-fit: contain;">
+                        <div>
+                            <h5 class="fw-bold text-primary mb-0"><%= companyName %></h5>
+                            <small class="text-muted"><%= companyPhone || '' %></small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge <%= invoice.status === 'paid' ? 'bg-success' : (invoice.status === 'overdue' ? 'bg-danger' : 'bg-warning text-dark') %> fs-6 px-3 py-2">
+                            <%= invoice.status === 'paid' ? 'LUNAS' : (invoice.status === 'overdue' ? 'JATUH TEMPO' : 'BELUM DIBAYAR') %>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-sm-6">
+                        <h6 class="text-muted small text-uppercase fw-bold">Ditujukan Kepada:</h6>
+                        <h5 class="fw-bold mb-1"><%= invoice.customer_name %></h5>
+                        <p class="text-muted small mb-0">ID: <%= invoice.customer_id %></p>
+                        <p class="text-muted small mb-0"><%= invoice.customer_address || '-' %></p>
+                        <p class="text-muted small"><i class="fas fa-phone me-1"></i><%= invoice.customer_phone || '-' %></p>
+                    </div>
+                    <div class="col-sm-6 text-sm-end">
+                        <h6 class="text-muted small text-uppercase fw-bold">Informasi Tagihan:</h6>
+                        <p class="mb-1"><strong>Periode:</strong> <%= invoice.period %></p>
+                        <p class="mb-1"><strong>Jatuh Tempo:</strong> <%= moment(invoice.due_date).format('DD MMMM YYYY') %> pukul 23:59 WIB</p>
+                        <% if (invoice.paid_date) { %>
+                        <p class="mb-1 text-success"><strong>Tanggal Bayar:</strong> <%= moment(invoice.paid_date).format('DD MMMM YYYY') %></p>
+                        <% } %>
+                        <p class="mb-0">
+                            <strong>Status WA:</strong> 
+                            <% if (invoice.whatsapp_sent) { %>
+                                <span class="badge bg-success"><i class="fab fa-whatsapp me-1"></i>Terkirim (<%= moment(invoice.whatsapp_sent_at).format('DD/MM HH:mm') %>)</span>
+                            <% } else { %>
+                                <span class="badge bg-secondary">Belum Dikirim</span>
+                            <% } %>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Table Breakdown -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Deskripsi Layanan</th>
+                                <th>Paket</th>
+                                <th class="text-end" width="180">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>Langganan Internet Periode <%= invoice.period %></strong>
+                                    <% if (invoice.connection_type === 'static' && invoice.ip_address) { %>
+                                    <br><small class="text-muted">Target IP: <%= invoice.ip_address %></small>
+                                    <% } else if (invoice.pppoe_username) { %>
+                                    <br><small class="text-muted">PPPoE User: <%= invoice.pppoe_username %></small>
+                                    <% } %>
+                                </td>
+                                <td><%= invoice.package_name || '-' %></td>
+                                <td class="text-end fw-bold">Rp <%= Number(invoice.amount).toLocaleString('id-ID') %></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <th colspan="2" class="text-end">Total Pembayaran:</th>
+                                <th class="text-end text-primary fs-5">Rp <%= Number(invoice.amount).toLocaleString('id-ID') %></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <% if (invoice.notes) { %>
+                <div class="alert alert-light border small">
+                    <strong>Catatan:</strong> <%= invoice.notes %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions & Payment History -->
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <h6 class="card-title fw-bold mb-0">Tindakan</h6>
+            </div>
+            <div class="card-body">
+                <% if (invoice.status !== 'paid') { %>
+                <form action="/billing/<%= invoice.id %>/pay" method="POST" class="mb-3" id="detailPayForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Metode Pembayaran</label>
+                        <select class="form-select" name="payment_method" id="detailPaymentMethod" autofocus>
+                            <option value="BCA" selected>BCA</option>
+                            <option value="BRI">BRI</option>
+                            <option value="DANA">DANA</option>
+                            <option value="QRIS">QRIS</option>
+                            <option value="SPay">SPay</option>
+                            <option value="Cash (Tunai)">Cash (Tunai)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Catatan Pembayaran (Opsional)</label>
+                        <input type="text" class="form-control" name="notes" placeholder="No. referensi / keterangan">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100" id="btnDetailSubmitPayment">
+                        <i class="fas fa-check-circle me-1"></i>Konfirmasi Bayar Lunas
+                    </button>
+                </form>
+                <% } else { %>
+                <form action="/billing/<%= invoice.id %>/reset-payment" method="POST" class="mb-3">
+                    <button type="submit" class="btn btn-outline-warning w-100" onclick="return confirm('Apakah Anda yakin ingin mereset status tagihan ini menjadi Belum Lunas? Data riwayat laporan rekapan tetap aman.')">
+                        <i class="fas fa-undo me-1"></i>Reset Status ke Belum Lunas
+                    </button>
+                </form>
+                <% } %>
+
+                <% if (invoice.status === 'paid') { %>
+                <form action="/billing/<%= invoice.id %>/send-receipt" method="POST">
+                    <button type="submit" class="btn btn-outline-success w-100">
+                        <i class="fab fa-whatsapp me-1"></i>Kirim Bukti Bayar & PDF ke WA
+                    </button>
+                </form>
+                <% } else { %>
+                <form action="/billing/<%= invoice.id %>/send-whatsapp" method="POST">
+                    <button type="submit" class="btn btn-outline-success w-100">
+                        <i class="fab fa-whatsapp me-1"></i>Kirim Tagihan & PDF ke WA
+                    </button>
+                </form>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Payment Records -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h6 class="card-title fw-bold mb-0">Riwayat Pembayaran</h6>
+            </div>
+            <div class="card-body p-0">
+                <% if (payments && payments.length > 0) { %>
+                <div class="list-group list-group-flush">
+                    <% payments.forEach(function(p) { %>
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>Rp <%= Number(p.amount).toLocaleString('id-ID') %></strong>
+                            <span class="badge bg-success-subtle text-success text-uppercase"><%= p.payment_method %></span>
+                        </div>
+                        <small class="text-muted d-block"><%= moment(p.payment_date).format('DD MMM YYYY, HH:mm') %></small>
+                        <small class="text-muted d-block">Diterima oleh: <%= p.received_by || 'Admin' %></small>
+                    </div>
+                    <% }); %>
+                </div>
+                <% } else { %>
+                <div class="text-center text-muted py-4">
+                    <small>Belum ada catatan pembayaran</small>
+                </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let detailPayConfirmed = false;
+    const detailForm = document.getElementById('detailPayForm');
+    if (detailForm) {
+        detailForm.addEventListener('submit', function(e) {
+            if (detailPayConfirmed) return true;
+            e.preventDefault();
+
+            const custName = '<%= invoice.customer_name %>';
+            const invNum = '<%= invoice.invoice_number %>';
+            const invAmount = 'Rp <%= Number(invoice.amount).toLocaleString("id-ID") %>';
+            const method = document.getElementById('detailPaymentMethod')?.value || 'BCA';
+
+            const confirmHtml = `
+                <div class="text-start p-3 bg-light rounded-3 border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Pelanggan:</span>
+                        <strong class="text-dark">${custName}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">No. Invoice:</span>
+                        <span class="badge bg-light text-primary border font-monospace">${invNum}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Metode:</span>
+                        <span class="badge bg-primary px-2 py-1">${method}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2">
+                        <span class="text-muted small">Total Tagihan:</span>
+                        <span class="fw-bold text-success fs-5">${invAmount}</span>
+                    </div>
+                </div>
+                <p class="mb-0 text-muted" style="font-size: 0.95rem;">
+                    Apakah Anda yakin ingin memproses dan mengonfirmasi pembayaran ini?
+                </p>
+            `;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Konfirmasi Pembayaran',
+                    html: confirmHtml,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-check me-1"></i>Iya',
+                    cancelButtonText: '<i class="fas fa-times me-1"></i>Tidak',
+                    reverseButtons: true,
+                    focusConfirm: true
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        detailPayConfirmed = true;
+                        const btn = document.getElementById('btnDetailSubmitPayment');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan Pembayaran...';
+                        }
+                        detailForm.submit();
+                    }
+                });
+            } else {
+                if (confirm(`Konfirmasi pembayaran ${invNum} (${custName}) sebesar ${invAmount} via ${method}?`)) {
+                    detailPayConfirmed = true;
+                    detailForm.submit();
+                }
+            }
+        });
+    }
+});
+</script>
+
+<%- include('partials/footer') %>
+

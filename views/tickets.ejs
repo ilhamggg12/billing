@@ -1,0 +1,1281 @@
+<%- include('partials/header', { title: 'Tiket Gangguan', activePage: 'tickets' }) %>
+<% const isTechUser = (typeof user !== 'undefined' && user && (user.role === 'technician' || user.role === 'teknisi')); %>
+
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="fw-bold mb-1">
+            <i class="fas fa-headset text-primary me-2"></i><%= isTechUser ? 'Portal Penanganan Tiket Gangguan' : 'Tiket Gangguan & Helpdesk' %>
+        </h4>
+        <p class="text-muted small mb-0">
+            <%= isTechUser ? `Selamat bertugas, ${user.name || user.username}! Pilih tiket di bawah untuk menerima tugas, update progress lapangan, dan upload foto dokumentasi.` : 'Kelola laporan gangguan pelanggan, notifikasi WhatsApp otomatis ke teknisi & pelanggan, serta arsip foto pengerjaan' %>
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <% if (!isTechUser) { %>
+        <button type="button" class="btn btn-outline-primary" onclick="switchTicketTab('tab-technicians-btn')">
+            <i class="fas fa-user-cog me-1"></i>Data & Akun Teknisi (<%= technicians.length %>)
+        </button>
+        <% } %>
+        <button type="button" class="btn btn-outline-secondary" onclick="switchTicketTab('tab-archive-btn')">
+            <i class="fas fa-images me-1"></i>Arsip Foto (<%= stats.totalPhotos %>)
+        </button>
+        <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateTicket">
+            <i class="fas fa-plus-circle me-1"></i>Buat Tiket Gangguan
+        </button>
+    </div>
+</div>
+
+<!-- Alur Kerja Otomatis Banner -->
+<div class="card border-0 shadow-sm mb-4 bg-white">
+    <div class="card-body py-3 px-4">
+        <div class="row g-3 align-items-center text-center text-md-start">
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="fas fa-Exclamation-triangle fa-bell"></i>
+                    </div>
+                    <div>
+                        <div class="badge bg-danger mb-1">1. Laporan Masuk</div>
+                        <div class="small text-muted lh-sm">Otomatis kirim <strong>WA ke Nomor Teknisi</strong> + Foto Laporan</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-info bg-opacity-10 text-info d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div>
+                        <div class="badge bg-info text-dark mb-1">2. Diterima Teknisi</div>
+                        <div class="small text-muted lh-sm">Otomatis kirim <strong>WA ke Pelanggan</strong> bahwa tiket diterima</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div>
+                        <div class="badge bg-warning text-dark mb-1">3. Sedang Ditangani</div>
+                        <div class="small text-muted lh-sm">Kirim <strong>WA Progress Pengerjaan</strong> + Foto ke Pelanggan</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div>
+                        <div class="badge bg-success mb-1">4. Gangguan Selesai</div>
+                        <div class="small text-muted lh-sm">Kirim <strong>WA Selesai & Bukti Foto</strong> ke Pelanggan & Arsip</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistik Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card border-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Total Tiket</div>
+                        <div class="stat-value text-primary"><%= stats.total %></div>
+                        <small class="text-muted"><i class="fas fa-camera me-1"></i><%= stats.totalPhotos %> Foto Arsip</small>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card border-danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Menunggu Teknisi</div>
+                        <div class="stat-value text-danger"><%= stats.open %></div>
+                        <small class="text-danger">Belum diterima teknisi</small>
+                    </div>
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card border-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Diterima & Proses</div>
+                        <div class="stat-value text-warning"><%= stats.accepted + stats.in_progress %></div>
+                        <small class="text-muted"><%= stats.accepted %> diterima, <%= stats.in_progress %> dikerjakan</small>
+                    </div>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card border-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Gangguan Selesai</div>
+                        <div class="stat-value text-success"><%= stats.resolved %></div>
+                        <small class="text-success">Normal kembali</small>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<% const openRecapTab = (typeof techRecap !== 'undefined' && techRecap && techRecap.filters && techRecap.filters.range === 'custom'); %>
+<ul class="nav nav-pills mb-3 gap-2 bg-white p-2 rounded-3 shadow-sm border" id="ticketTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <%= !openRecapTab ? 'active' : '' %> fw-semibold" id="tab-list-btn" data-bs-toggle="pill" data-bs-target="#tab-list" type="button" role="tab">
+            <i class="fas fa-list-ul me-1"></i>Daftar Tiket Gangguan
+            <span class="badge bg-white text-primary ms-1"><%= tickets.length %></span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <%= openRecapTab ? 'active' : '' %> fw-semibold" id="tab-recap-btn" data-bs-toggle="pill" data-bs-target="#tab-recap" type="button" role="tab">
+            <i class="fas fa-clipboard-check me-1"></i>Rekap Pengerjaan Teknisi
+            <% if (typeof techRecap !== 'undefined' && techRecap && techRecap.summary) { %>
+                <span class="badge bg-success ms-1"><%= techRecap.summary.month.total %></span>
+            <% } %>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="tab-archive-btn" data-bs-toggle="pill" data-bs-target="#tab-archive" type="button" role="tab">
+            <i class="fas fa-images me-1"></i>Arsip Foto Gangguan & Pelaporan
+            <span class="badge bg-secondary ms-1"><%= stats.totalPhotos %></span>
+        </button>
+    </li>
+    <% if (!isTechUser) { %>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="tab-technicians-btn" data-bs-toggle="pill" data-bs-target="#tab-technicians" type="button" role="tab">
+            <i class="fas fa-user-cog me-1"></i>Data Teknisi & Akun Login
+            <span class="badge bg-secondary ms-1"><%= technicians.length %></span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="tab-templates-btn" data-bs-toggle="pill" data-bs-target="#tab-templates" type="button" role="tab">
+            <i class="fab fa-whatsapp me-1"></i>Template WA Otomatis
+        </button>
+    </li>
+    <% } %>
+</ul>
+
+<div class="tab-content" id="ticketTabsContent">
+    <!-- ================================================================== -->
+    <!-- TAB 1: DAFTAR TIKET GANGGUAN -->
+    <!-- ================================================================== -->
+    <div class="tab-pane fade <%= !openRecapTab ? 'show active' : '' %>" id="tab-list" role="tabpanel">
+        <!-- Filter Bar -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-3">
+                <form method="GET" action="/tickets" class="row g-2 align-items-end">
+                    <div class="col-sm-4 col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Status Tiket</label>
+                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>Semua Status</option>
+                            <option value="open" <%= filters.status === 'open' ? 'selected' : '' %>>1. Baru / Menunggu Teknisi</option>
+                            <option value="accepted" <%= filters.status === 'accepted' ? 'selected' : '' %>>2. Diterima Teknisi</option>
+                            <option value="in_progress" <%= filters.status === 'in_progress' ? 'selected' : '' %>>3. Sedang Ditangani</option>
+                            <option value="resolved" <%= filters.status === 'resolved' ? 'selected' : '' %>>4. Selesai (Resolved)</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Prioritas</label>
+                        <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="all" <%= filters.priority === 'all' ? 'selected' : '' %>>Semua Prioritas</option>
+                            <option value="critical" <%= filters.priority === 'critical' ? 'selected' : '' %>>Darurat (Critical / LOS)</option>
+                            <option value="high" <%= filters.priority === 'high' ? 'selected' : '' %>>Tinggi (Urgent)</option>
+                            <option value="medium" <%= filters.priority === 'medium' ? 'selected' : '' %>>Sedang (Normal)</option>
+                            <option value="low" <%= filters.priority === 'low' ? 'selected' : '' %>>Rendah (Low)</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Teknisi</label>
+                        <select name="technician" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="all" <%= filters.technician === 'all' ? 'selected' : '' %>>Semua Teknisi</option>
+                            <% technicians.forEach(tech => { %>
+                                <option value="<%= tech.id %>" <%= String(filters.technician) === String(tech.id) ? 'selected' : '' %>><%= tech.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+                    <div class="col-sm-12 col-md-3 d-flex gap-2">
+                        <a href="/tickets" class="btn btn-sm btn-light border w-100"><i class="fas fa-sync-alt me-1"></i>Reset Filter</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabel Tiket -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <table class="table table-hover align-middle datatable w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th>No. Tiket</th>
+                            <th>Pelanggan</th>
+                            <th>Kategori & Keluhan</th>
+                            <th>Teknisi & Notifikasi WA</th>
+                            <th>Arsip Foto</th>
+                            <th>Status</th>
+                            <th class="text-end">Aksi Penanganan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% tickets.forEach(t => { 
+                            const tPhotos = photosByTicket[t.id] || [];
+                        %>
+                        <tr>
+                            <td>
+                                <a href="/tickets/<%= t.id %>" class="fw-bold text-primary text-decoration-none d-block">
+                                    <%= t.ticket_number %>
+                                </a>
+                                <small class="text-muted d-block" style="font-size: 0.74rem;">
+                                    <i class="far fa-clock me-1"></i><%= moment(t.created_at).format('DD/MM/YYYY HH:mm') %>
+                                </small>
+                                <% if (t.priority === 'critical') { %>
+                                    <span class="badge bg-danger mt-1" style="font-size: 0.68rem;"><i class="fas fa-bolt me-1"></i>DARURAT / LOS</span>
+                                <% } else if (t.priority === 'high') { %>
+                                    <span class="badge bg-warning text-dark mt-1" style="font-size: 0.68rem;">TINGGI</span>
+                                <% } else if (t.priority === 'medium') { %>
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info mt-1" style="font-size: 0.68rem;">SEDANG</span>
+                                <% } else { %>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary mt-1" style="font-size: 0.68rem;">RENDAH</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark"><%= t.customer_name %></div>
+                                <% if (t.customer_code) { %>
+                                    <span class="badge bg-light text-secondary border" style="font-size: 0.7rem;"><%= t.customer_code %></span>
+                                <% } %>
+                                <% if (t.customer_phone) { %>
+                                    <div class="small text-muted mt-1">
+                                        <i class="fab fa-whatsapp text-success me-1"></i><%= t.customer_phone %>
+                                    </div>
+                                <% } %>
+                                <% if (t.customer_address) { %>
+                                    <div class="small text-muted text-truncate" style="max-width: 200px;" title="<%= t.customer_address %>">
+                                        <i class="fas fa-map-marker-alt text-danger me-1"></i><%= t.customer_address %>
+                                    </div>
+                                <% } %>
+                                <% if (t.latitude && t.longitude) { %>
+                                    <a href="https://www.google.com/maps?q=<%= t.latitude %>,<%= t.longitude %>" target="_blank" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none mt-1">
+                                        <i class="fas fa-location-arrow me-1"></i>Buka Maps
+                                    </a>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark"><%= t.category %></div>
+                                <div class="small text-secondary" style="max-width: 240px; white-space: normal;">
+                                    <%= t.description || t.subject %>
+                                </div>
+                                <% if (t.resolution_notes && t.status === 'resolved') { %>
+                                    <div class="mt-1 p-1 px-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded small text-success" style="font-size: 0.74rem;">
+                                        <strong><i class="fas fa-check me-1"></i>Solusi:</strong> <%= t.resolution_notes %>
+                                    </div>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark mb-1">
+                                    <i class="fas fa-user-cog text-primary me-1"></i><%= t.technician_name || 'Belum Ditentukan' %>
+                                </div>
+                                <% if (t.technician_phone) { %>
+                                    <div class="small text-muted mb-1" style="font-size: 0.73rem;"><%= t.technician_phone %></div>
+                                <% } %>
+                                <!-- Indikator Status Notifikasi WA -->
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    <span class="badge <%= t.wa_tech_sent ? 'bg-success' : 'bg-secondary bg-opacity-25 text-muted' %>" style="font-size: 0.65rem;" title="Notifikasi WA Laporan ke Teknisi">
+                                        <i class="fab fa-whatsapp me-1"></i>Teknisi <%= t.wa_tech_sent ? '✓' : '✗' %>
+                                    </span>
+                                    <span class="badge <%= t.wa_accepted_sent ? 'bg-info text-dark' : 'bg-secondary bg-opacity-25 text-muted' %>" style="font-size: 0.65rem;" title="Notifikasi WA Diterima ke Pelanggan">
+                                        Diterima <%= t.wa_accepted_sent ? '✓' : '✗' %>
+                                    </span>
+                                    <span class="badge <%= t.wa_progress_sent ? 'bg-warning text-dark' : 'bg-secondary bg-opacity-25 text-muted' %>" style="font-size: 0.65rem;" title="Notifikasi WA Progress ke Pelanggan">
+                                        Progress <%= t.wa_progress_sent ? `(${t.wa_progress_sent})` : '✗' %>
+                                    </span>
+                                    <span class="badge <%= t.wa_resolved_sent ? 'bg-success' : 'bg-secondary bg-opacity-25 text-muted' %>" style="font-size: 0.65rem;" title="Notifikasi WA Selesai ke Pelanggan">
+                                        Selesai <%= t.wa_resolved_sent ? '✓' : '✗' %>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <% if (tPhotos.length > 0) { %>
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <% tPhotos.slice(0, 2).forEach(ph => { %>
+                                            <img src="<%= ph.file_path %>" alt="Foto Tiket"
+                                                 class="rounded border shadow-xs cursor-pointer"
+                                                 style="width: 42px; height: 42px; object-fit: cover; cursor: pointer;"
+                                                 onclick="previewTicketPhoto('<%= ph.file_path %>', '<%= t.ticket_number %> - <%= (ph.caption || '').replace(/'/g, '') %>')">
+                                        <% }) %>
+                                        <% if (tPhotos.length > 2) { %>
+                                            <a href="/tickets/<%= t.id %>" class="badge bg-dark text-decoration-none">+<%= tPhotos.length - 2 %></a>
+                                        <% } %>
+                                    </div>
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.7rem;">
+                                        <i class="fas fa-camera me-1"></i><%= tPhotos.length %> Foto Arsip
+                                    </small>
+                                <% } else { %>
+                                    <span class="text-muted small"><i class="far fa-image me-1"></i>Belum ada foto</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (t.status === 'open') { %>
+                                    <span class="badge bg-danger px-2 py-1"><i class="fas fa-bell me-1"></i>1. BARU / MENUNGGU</span>
+                                <% } else if (t.status === 'accepted') { %>
+                                    <span class="badge bg-info text-dark px-2 py-1"><i class="fas fa-user-check me-1"></i>2. DITERIMA TEKNISI</span>
+                                <% } else if (t.status === 'in_progress') { %>
+                                    <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-tools me-1"></i>3. SEDANG DITANGANI</span>
+                                <% } else { %>
+                                    <span class="badge bg-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>4. SELESAI</span>
+                                <% } %>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex flex-wrap justify-content-end gap-1">
+                                    <% if (t.status === 'open') { %>
+                                        <button type="button" class="btn btn-sm btn-info text-dark fw-semibold"
+                                                onclick="openAcceptModal('<%= t.id %>', '<%= t.ticket_number %>', '<%= t.customer_name.replace(/'/g, '') %>', '<%= t.technician_id || '' %>', '<%= (t.technician_name || '').replace(/'/g, '') %>', '<%= t.technician_phone || '' %>')"
+                                                title="Teknisi Terima Tiket & Kirim WA ke Pelanggan">
+                                            <i class="fas fa-hand-paper me-1"></i>Terima Tiket
+                                        </button>
+                                    <% } %>
+
+                                    <% if (t.status === 'open' || t.status === 'accepted' || t.status === 'in_progress') { %>
+                                        <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold"
+                                                onclick="openProgressModal('<%= t.id %>', '<%= t.ticket_number %>', '<%= t.customer_name.replace(/'/g, '') %>', '<%= (t.technician_name || '').replace(/'/g, '') %>')"
+                                                title="Update Progress Pengerjaan & Kirim WA ke Pelanggan">
+                                            <i class="fas fa-tools me-1"></i>Update Progress
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success fw-semibold"
+                                                onclick="openResolveModal('<%= t.id %>', '<%= t.ticket_number %>', '<%= t.customer_name.replace(/'/g, '') %>', '<%= (t.technician_name || '').replace(/'/g, '') %>')"
+                                                title="Tandai Selesai & Kirim WA Selesai ke Pelanggan">
+                                            <i class="fas fa-check-double me-1"></i>Selesai
+                                        </button>
+                                    <% } %>
+
+                                    <a href="/tickets/<%= t.id %>" class="btn btn-sm btn-outline-primary" title="Detail Timeline & Arsip Foto">
+                                        <i class="fas fa-eye me-1"></i>Detail
+                                    </a>
+
+                                    <% if (!isTechUser) { %>
+                                    <form action="/tickets/<%= t.id %>/delete" method="POST" class="d-inline">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete" title="Hapus Tiket">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    <% } %>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 2: GALERI ARSIP FOTO GANGGUAN & PELAPORAN -->
+    <!-- ================================================================== -->
+    <div class="tab-pane fade" id="tab-archive" role="tabpanel">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-camera-retro text-primary me-2"></i>Arsip Foto Tiket Gangguan & Dokumentasi Teknis</h6>
+                    <small class="text-muted">Seluruh foto lampiran dari laporan pelanggan, proses perbaikan, hingga bukti selesai</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <select id="archiveStageFilter" class="form-select form-select-sm" style="width: auto;" onchange="filterArchivePhotos()">
+                        <option value="all">Semua Tahapan (<%= allTicketPhotos.length %>)</option>
+                        <option value="report">1. Foto Laporan Awal</option>
+                        <option value="accepted">2. Foto Penerimaan Tiket</option>
+                        <option value="in_progress">3. Foto Progress Pengerjaan</option>
+                        <option value="resolved">4. Foto Bukti Selesai</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (allTicketPhotos.length === 0) { %>
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-images fa-3x mb-3 opacity-25"></i>
+                        <p class="mb-1 fw-semibold">Belum Ada Foto Arsip Dokumentasi</p>
+                        <small>Foto yang dilampirkan saat membuat tiket, update progress, atau penyelesaian akan tersimpan otomatis di sini.</small>
+                    </div>
+                <% } else { %>
+                    <div class="row g-3" id="archivePhotosGrid">
+                        <% allTicketPhotos.forEach(ph => { 
+                            let stageBadge = 'bg-secondary';
+                            let stageText = 'Dokumentasi';
+                            if (ph.stage === 'report') { stageBadge = 'bg-danger'; stageText = 'Laporan Awal'; }
+                            else if (ph.stage === 'accepted') { stageBadge = 'bg-info text-dark'; stageText = 'Diterima Teknisi'; }
+                            else if (ph.stage === 'in_progress') { stageBadge = 'bg-warning text-dark'; stageText = 'Progress Pengerjaan'; }
+                            else if (ph.stage === 'resolved') { stageBadge = 'bg-success'; stageText = 'Bukti Selesai'; }
+                        %>
+                        <div class="col-sm-6 col-md-4 col-lg-3 archive-photo-item" data-stage="<%= ph.stage %>">
+                            <div class="card h-100 border shadow-xs">
+                                <div class="position-relative" style="height: 180px; overflow: hidden; background: #f8fafc;">
+                                    <img src="<%= ph.file_path %>" alt="<%= ph.caption %>"
+                                         class="w-100 h-100" style="object-fit: cover; cursor: pointer;"
+                                         onclick="previewTicketPhoto('<%= ph.file_path %>', '<%= ph.ticket_number %> - <%= (ph.caption || '').replace(/'/g, '') %>')">
+                                    <span class="badge <%= stageBadge %> position-absolute top-0 start-0 m-2 shadow-sm">
+                                        <%= stageText %>
+                                    </span>
+                                </div>
+                                <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <a href="/tickets/<%= ph.ticket_id %>" class="fw-bold text-primary small text-decoration-none">
+                                                <%= ph.ticket_number %>
+                                            </a>
+                                            <small class="text-muted" style="font-size: 0.7rem;">
+                                                <%= moment(ph.created_at).format('DD/MM/YY HH:mm') %>
+                                            </small>
+                                        </div>
+                                        <div class="fw-semibold text-dark small mb-1"><%= ph.customer_name %></div>
+                                        <p class="text-secondary small mb-2" style="font-size: 0.78rem;"><%= ph.caption || '-' %></p>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                                        <small class="text-muted" style="font-size: 0.72rem;">
+                                            <i class="fas fa-user me-1"></i><%= ph.uploaded_by || 'Teknisi' %>
+                                        </small>
+                                        <div class="d-flex gap-1">
+                                            <a href="<%= ph.file_path %>" download="<%= ph.file_name || 'arsip-tiket.jpg' %>" class="btn btn-sm btn-light border py-0 px-2" title="Unduh Foto">
+                                                <i class="fas fa-download text-primary" style="font-size: 0.75rem;"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="previewTicketPhoto('<%= ph.file_path %>', '<%= ph.ticket_number %> - <%= (ph.caption || '').replace(/'/g, '') %>')" title="Perbesar">
+                                                <i class="fas fa-search-plus text-dark" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 3: DATA TEKNISI, AKUN LOGIN & NOMOR WHATSAPP -->
+    <!-- ================================================================== -->
+    <div class="tab-pane fade" id="tab-technicians" role="tabpanel">
+        <!-- Info Portal Login Teknisi -->
+        <div class="alert alert-warning border-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h6 class="fw-bold mb-1 text-dark"><i class="fas fa-key me-2"></i>Akses Portal Login Khusus Teknisi</h6>
+                <small class="text-dark">Teknisi dapat login menggunakan <strong>Username</strong> atau <strong>Nomor WhatsApp</strong> di halaman login tab <strong>Portal Teknisi</strong> (<code>/teknisi</code>). Teknisi hanya dapat mengakses menu <strong>Tiket Gangguan</strong>.</small>
+            </div>
+            <a href="/teknisi" target="_blank" class="btn btn-sm btn-dark fw-semibold">
+                <i class="fas fa-external-link-alt me-1"></i>Lihat Halaman Portal Teknisi
+            </a>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-user-plus text-primary me-2"></i>Tambah Teknisi & Akun Login</h6>
+                    </div>
+                    <div class="card-body">
+                        <form action="/tickets/technicians/add" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nama Teknisi <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" placeholder="Contoh: Kang Asep (Teknisi)" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nomor WhatsApp Teknisi <span class="text-danger">*</span></label>
+                                <input type="text" name="phone" class="form-control" placeholder="Contoh: 081234567890" required>
+                                <div class="form-text">Menerima pesan WA otomatis saat ada laporan gangguan baru.</div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small">Username Login <span class="text-danger">*</span></label>
+                                    <input type="text" name="username" class="form-control form-control-sm" placeholder="Contoh: asep" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold small">Password Login <span class="text-danger">*</span></label>
+                                    <input type="text" name="password" class="form-control form-control-sm" value="teknisi123" placeholder="Password" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Jabatan / Area Tugas</label>
+                                <input type="text" name="role" class="form-control" value="Teknisi Lapangan" placeholder="Teknisi Lapangan / Splicer / NOC">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Keterangan tambahan (opsional)"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save me-1"></i>Simpan Teknisi & Buat Akun
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-users-cog text-primary me-2"></i>Daftar Teknisi Lapangan & Akun Portal</h6>
+                    </div>
+                    <div class="card-body">
+                        <% if (technicians.length === 0) { %>
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Belum ada data teknisi terdaftar. Silakan tambahkan nama dan nomor WhatsApp teknisi di formulir sebelah kiri.
+                            </div>
+                        <% } else { %>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nama Teknisi</th>
+                                            <th>Username Login</th>
+                                            <th>Nomor WhatsApp</th>
+                                            <th>Jabatan / Area</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% technicians.forEach(tech => { %>
+                                        <tr>
+                                            <td class="fw-bold"><%= tech.name %></td>
+                                            <td>
+                                                <span class="badge bg-dark font-monospace">
+                                                    <i class="fas fa-user-lock me-1"></i><%= tech.username || tech.phone %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                                    <i class="fab fa-whatsapp me-1"></i><%= tech.phone %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div><%= tech.role || 'Teknisi Lapangan' %></div>
+                                                <% if (tech.notes) { %>
+                                                    <small class="text-muted"><%= tech.notes %></small>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <% if (tech.is_active) { %>
+                                                    <span class="badge bg-success">Aktif</span>
+                                                <% } else { %>
+                                                    <span class="badge bg-secondary">Nonaktif</span>
+                                                <% } %>
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="openEditTechModal('<%= tech.id %>', '<%= (tech.username || '').replace(/'/g, '') %>', '<%= tech.name.replace(/'/g, '') %>', '<%= tech.phone %>', '<%= (tech.role || '').replace(/'/g, '') %>', '<%= tech.is_active %>', '<%= (tech.notes || '').replace(/'/g, '') %>')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form action="/tickets/technicians/<%= tech.id %>/delete" method="POST" class="d-inline">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 4: TEMPLATE NOTIFIKASI WHATSAPP TIKET -->
+    <!-- ================================================================== -->
+    <div class="tab-pane fade" id="tab-templates" role="tabpanel">
+        <form action="/tickets/templates/save" method="POST">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold mb-0"><i class="fab fa-whatsapp text-success me-2"></i>Pengaturan Template Pesan WhatsApp Tiket Gangguan</h6>
+                        <small class="text-muted">Kustomisasi isi pesan otomatis untuk setiap tahapan penanganan tiket gangguan</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i class="fas fa-save me-1"></i>Simpan Template
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border small mb-4">
+                        <strong><i class="fas fa-code text-primary me-1"></i>Kode Variabel (Placeholder) yang Tersedia:</strong>
+                        <div class="mt-1 d-flex flex-wrap gap-1">
+                            <code>{ticket_number}</code>
+                            <code>{customer_name}</code>
+                            <code>{customer_id}</code>
+                            <code>{customer_phone}</code>
+                            <code>{customer_address}</code>
+                            <code>{maps_link}</code>
+                            <code>{category}</code>
+                            <code>{priority}</code>
+                            <code>{description}</code>
+                            <code>{technician_name}</code>
+                            <code>{technician_phone}</code>
+                            <code>{note}</code>
+                            <code>{created_at}</code>
+                            <code>{updated_at}</code>
+                            <code>{resolved_at}</code>
+                            <code>{company_name}</code>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-danger">
+                                <i class="fas fa-bell me-1"></i>1. Pesan WA ke Teknisi (Saat Laporan Baru Masuk)
+                            </label>
+                            <textarea name="ticket_wa_tech_template" class="form-control font-monospace small" rows="9"><%= templates.ticket_wa_tech_template %></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-info">
+                                <i class="fas fa-user-check me-1"></i>2. Pesan WA ke Pelanggan (Saat Tiket Diterima Teknisi)
+                            </label>
+                            <textarea name="ticket_wa_accepted_template" class="form-control font-monospace small" rows="9"><%= templates.ticket_wa_accepted_template %></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-warning">
+                                <i class="fas fa-tools me-1"></i>3. Pesan WA ke Pelanggan (Saat Update Progress Pengerjaan)
+                            </label>
+                            <textarea name="ticket_wa_progress_template" class="form-control font-monospace small" rows="9"><%= templates.ticket_wa_progress_template %></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-success">
+                                <i class="fas fa-check-circle me-1"></i>4. Pesan WA ke Pelanggan (Saat Gangguan Selesai / Normal)
+                            </label>
+                            <textarea name="ticket_wa_resolved_template" class="form-control font-monospace small" rows="9"><%= templates.ticket_wa_resolved_template %></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-end py-3">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-save me-1"></i>Simpan Semua Template WA Tiket
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB REKAP PENGERJAAN TEKNISI (HARI INI, MINGGU INI, BULAN INI) -->
+    <!-- ================================================================== -->
+    <div class="tab-pane fade <%= openRecapTab ? 'show active' : '' %>" id="tab-recap" role="tabpanel">
+        <%- include('partials/technician-recap-card', { techRecap, recapBaseUrl: '/tickets' }) %>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 1: BUAT TIKET GANGGUAN BARU (+ WA TEKNISI + FOTO LAPORAN) -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalCreateTicket" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/tickets" method="POST" enctype="multipart/form-data">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-plus-circle me-2"></i>Buat Tiket Laporan Gangguan Baru
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Pilih Pelanggan -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Pilih Pelanggan yang Mengalami Gangguan <span class="text-danger">*</span></label>
+                            <select name="customer_id" id="createTicketCustomerSelect" class="form-select" onchange="onSelectTicketCustomer(this)">
+                                <option value="">-- Pilih dari Daftar Pelanggan --</option>
+                                <% customers.forEach(c => { %>
+                                    <option value="<%= c.id %>"
+                                            data-name="<%= c.name %>"
+                                            data-phone="<%= c.phone || '' %>"
+                                            data-address="<%= c.address || '' %>"
+                                            data-pppoe="<%= c.pppoe_username || '' %>">
+                                        <%= c.name %> (<%= c.customer_id || '-' %>) - <%= c.address || 'Tanpa alamat' %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Nama Pelanggan <span class="text-danger">*</span></label>
+                            <input type="text" name="manual_customer_name" id="createCustName" class="form-control" placeholder="Nama Pelanggan" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Nomor WhatsApp Pelanggan <span class="text-danger">*</span></label>
+                            <input type="text" name="manual_customer_phone" id="createCustPhone" class="form-control" placeholder="08xxxxxxxxxx">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Alamat Lokasi Pelanggan</label>
+                            <input type="text" name="manual_customer_address" id="createCustAddress" class="form-control" placeholder="Alamat lengkap pemasangan pelanggan">
+                        </div>
+
+                        <!-- Kategori & Prioritas -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Kategori Gangguan</label>
+                            <select name="category" class="form-select">
+                                <option value="Koneksi Terputus (LOS Merah)">Koneksi Terputus (LOS Merah)</option>
+                                <option value="Internet Lambat / Putus-Nyambung">Internet Lambat / Putus-Nyambung</option>
+                                <option value="Kabel Dropcore Putus">Kabel Dropcore Putus</option>
+                                <option value="Modem / ONT Bermasalah / Restart">Modem / ONT Bermasalah / Restart</option>
+                                <option value="Ganti Password / Setting WiFi">Ganti Password / Setting WiFi</option>
+                                <option value="Gangguan ODP / Jalur Distribusi">Gangguan ODP / Jalur Distribusi</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Prioritas Penanganan</label>
+                            <select name="priority" class="form-select">
+                                <option value="critical">Darurat (Critical / LOS Mati Total)</option>
+                                <option value="high">Tinggi (Urgent)</option>
+                                <option value="medium" selected>Sedang (Normal)</option>
+                                <option value="low">Rendah (Low)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Detail Keluhan / Laporan Gangguan <span class="text-danger">*</span></label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Jelaskan keluhan pelanggan, misal: Lampu indikator LOS pada modem berkedip merah sejak pagi..." required></textarea>
+                        </div>
+
+                        <!-- Pilih Teknisi Tujuan WhatsApp -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold text-primary mb-2">
+                                    <i class="fas fa-user-cog me-1"></i>Tugaskan & Kirim WhatsApp ke Teknisi
+                                </label>
+                                <select name="technician_select" id="createTechSelect" class="form-select mb-2" onchange="toggleCustomTechInput(this, 'createCustomTechBox')">
+                                    <% if (technicians.length > 0) { %>
+                                        <option value="all">Kirim ke Semua Teknisi Aktif (<%= technicians.filter(t => t.is_active).length %> Teknisi)</option>
+                                        <% technicians.filter(t => t.is_active).forEach(tech => { %>
+                                            <option value="<%= tech.id %>"><%= tech.name %> (<%= tech.phone %> - <%= tech.role %>)</option>
+                                        <% }) %>
+                                    <% } %>
+                                    <option value="custom" <%= technicians.length === 0 ? 'selected' : '' %>>Input Nomor WA Teknisi Manual...</option>
+                                </select>
+
+                                <div id="createCustomTechBox" class="row g-2 mt-1 <%= technicians.length === 0 ? '' : 'd-none' %>">
+                                    <div class="col-md-6">
+                                        <input type="text" name="custom_tech_name" class="form-control form-control-sm" placeholder="Nama Teknisi (misal: Kang Asep)">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" name="custom_tech_phone" class="form-control form-control-sm" placeholder="Nomor WA Teknisi (08xxxx)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lampiran Foto Laporan Awal -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold mb-1">
+                                    <i class="fas fa-camera text-danger me-1"></i>Lampirkan Foto Laporan Gangguan (Arsip)
+                                </label>
+                                <input type="file" name="photos" class="form-control mb-2" accept="image/*" multiple onchange="previewUploadImages(this, 'previewCreatePhotos')">
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto (misal: Foto lampu modem LOS merah dari pelanggan)">
+                                <div id="previewCreatePhotos" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Opsi Kirim WA -->
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="send_wa_tech" id="sendWaTechNew" value="true" checked>
+                                    <label class="form-check-label fw-semibold" for="sendWaTechNew">
+                                        <i class="fab fa-whatsapp text-success me-1"></i>Kirim Notifikasi WA ke Teknisi
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="send_photo_wa" id="sendPhotoWaNew" value="true" checked>
+                                    <label class="form-check-label fw-semibold" for="sendPhotoWaNew">
+                                        Sertakan Foto ke WA Teknisi
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-paper-plane me-1"></i>Buat Tiket & Kirim WA Teknisi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 2: TEKNISI TERIMA TIKET (-> WA KE PELANGGAN) -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalAcceptTicket" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="formAcceptTicket" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets">
+                <div class="modal-header bg-info text-dark">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-user-check me-2"></i>Terima Tiket Gangguan (<span id="acceptTicketNum"></span>)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="fab fa-whatsapp me-1"></i>Pelanggan (<strong id="acceptCustName"></strong>) akan menerima notifikasi WhatsApp bahwa tiket gangguan telah diterima oleh teknisi.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Teknisi yang Menerima & Menangani</label>
+                        <select name="technician_select" id="acceptTechSelect" class="form-select mb-2" onchange="toggleCustomTechInput(this, 'acceptCustomTechBox')">
+                            <% technicians.forEach(tech => { %>
+                                <option value="<%= tech.id %>"><%= tech.name %> (<%= tech.phone %>)</option>
+                            <% }) %>
+                            <option value="custom">Input Nama & Nomor Teknisi Manual...</option>
+                        </select>
+                        <div id="acceptCustomTechBox" class="row g-2 <%= technicians.length === 0 ? '' : 'd-none' %>">
+                            <div class="col-6">
+                                <input type="text" name="custom_tech_name" id="acceptCustomTechName" class="form-control form-control-sm" placeholder="Nama Teknisi">
+                            </div>
+                            <div class="col-6">
+                                <input type="text" name="custom_tech_phone" id="acceptCustomTechPhone" class="form-control form-control-sm" placeholder="No. HP Teknisi">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Catatan / Estimasi Penanganan</label>
+                        <textarea name="note" class="form-control" rows="3">Tiket gangguan Anda telah kami terima. Tim teknisi sedang bersiap menuju lokasi / melakukan pengecekan jalur jaringan.</textarea>
+                    </div>
+
+                    <div class="mb-3 p-2 bg-light rounded border">
+                        <label class="form-label fw-semibold small mb-1"><i class="fas fa-camera text-primary me-1"></i>Lampirkan Foto (Opsional)</label>
+                        <input type="file" name="photos" class="form-control form-control-sm mb-1" accept="image/*" multiple onchange="previewUploadImages(this, 'previewAcceptPhotos')">
+                        <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto (opsional)">
+                        <div id="previewAcceptPhotos" class="d-flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="send_wa_customer" id="acceptSendWa" value="true" checked>
+                        <label class="form-check-label fw-semibold" for="acceptSendWa">
+                            <i class="fab fa-whatsapp text-success me-1"></i>Kirim Notifikasi WA Penerimaan ke Pelanggan
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info text-dark fw-bold px-4">
+                        <i class="fas fa-check me-1"></i>Terima Tiket & Kirim WA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 3: UPDATE PROGRESS PENGERJAAN (-> WA PROGRESS KE PELANGGAN + FOTO) -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalProgressTicket" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="formProgressTicket" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-tools me-2"></i>Update Progress Pengerjaan (<span id="progressTicketNum"></span>)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="fab fa-whatsapp me-1"></i>Kirim informasi perkembangan pengerjaan tiket beserta foto dokumentasi ke WhatsApp pelanggan (<strong id="progressCustName"></strong>).
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tahapan Progress Pengerjaan</label>
+                            <input type="text" name="progress_title" id="progressTitleInput" class="form-control" value="Sedang Dalam Penanganan Teknisi" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Teknisi Bertugas</label>
+                            <input type="text" name="technician_name" id="progressTechName" class="form-control" placeholder="Nama Teknisi">
+                        </div>
+
+                        <!-- Quick Chips Progress -->
+                        <div class="col-12">
+                            <small class="text-muted d-block mb-1">Pilihan Cepat Progress:</small>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-secondary small py-0 px-2" onclick="setProgressTemplate('Teknisi Menuju Lokasi', 'Teknisi sedang dalam perjalanan menuju lokasi pelanggan / titik ODP.')">Menuju Lokasi</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary small py-0 px-2" onclick="setProgressTemplate('Pengecekan Titik ODP & Jalur Kabel', 'Teknisi sedang melakukan pengecekan redaman optik di titik ODP dan menelusuri jalur kabel dropcore.')">Cek ODP & Jalur</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary small py-0 px-2" onclick="setProgressTemplate('Penyambungan Ulang (Splicing) Fiber Optik', 'Ditemukan kabel fiber optik putus/redaman tinggi. Teknisi sedang melakukan penyambungan ulang (splicing).')">Splicing FO</button>
+                                <button type="button" class="btn btn-xs btn-outline-secondary small py-0 px-2" onclick="setProgressTemplate('Pengecekan & Konfigurasi Modem ONT', 'Teknisi sedang mengecek perangkat modem ONT dan menguji kestabilan koneksi internet.')">Cek Modem ONT</button>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Detail Progress Pengerjaan <span class="text-danger">*</span></label>
+                            <textarea name="note" id="progressNoteInput" class="form-control" rows="3" placeholder="Jelaskan apa yang sedang dikerjakan teknisi saat ini..." required>Teknisi sedang melakukan pengecekan jalur kabel fiber optik dan perbaikan di lapangan.</textarea>
+                        </div>
+
+                        <!-- Lampiran Foto Pengerjaan -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold mb-1">
+                                    <i class="fas fa-camera text-warning me-1"></i>Lampirkan Foto Pengerjaan (Arsip & WA)
+                                </label>
+                                <input type="file" name="photos" class="form-control mb-2" accept="image/*" multiple onchange="previewUploadImages(this, 'previewProgressPhotos')">
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto (misal: Proses splicing kabel dropcore di tiang ODP)">
+                                <div id="previewProgressPhotos" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-flex flex-wrap gap-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_wa_customer" id="progressSendWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="progressSendWa">
+                                    <i class="fab fa-whatsapp text-success me-1"></i>Kirim WA Progress ke Pelanggan
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_photo_wa" id="progressSendPhotoWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="progressSendPhotoWa">
+                                    Sertakan Foto Progress ke WA Pelanggan
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-4">
+                        <i class="fas fa-paper-plane me-1"></i>Simpan Progress & Kirim WA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 4: SELESAIKAN TIKET GANGGUAN (-> WA SELESAI KE PELANGGAN + BUKTI FOTO) -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalResolveTicket" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="formResolveTicket" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-check-double me-2"></i>Selesaikan Tiket Gangguan (<span id="resolveTicketNum"></span>)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success py-2 small mb-3">
+                        <i class="fab fa-whatsapp me-1"></i>Pelanggan (<strong id="resolveCustName"></strong>) akan menerima notifikasi WhatsApp bahwa gangguan telah <strong>SELESAI</strong> diperbaiki dan layanan internet kembali normal.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Teknisi yang Menyelesaikan</label>
+                            <input type="text" name="technician_name" id="resolveTechName" class="form-control" placeholder="Nama Teknisi">
+                        </div>
+
+                        <!-- Quick Chips Solusi -->
+                        <div class="col-12">
+                            <small class="text-muted d-block mb-1">Pilihan Cepat Tindakan / Solusi:</small>
+                            <div class="d-flex flex-wrap gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-success small py-0 px-2" onclick="setResolveNote('Penyambungan ulang (splicing) kabel dropcore yang putus telah selesai. Redaman optik kembali normal (-19 dBm) dan internet sudah aktif kembali.')">Splicing Dropcore Selesai</button>
+                                <button type="button" class="btn btn-xs btn-outline-success small py-0 px-2" onclick="setResolveNote('Pergantian konektor Fast Connector / Patchcord telah selesai dilakukan. Lampu indikator PON sudah hijau stabil dan internet kembali normal.')">Ganti Konektor / Patchcord</button>
+                                <button type="button" class="btn btn-xs btn-outline-success small py-0 px-2" onclick="setResolveNote('Konfigurasi ulang perangkat modem ONT / Router selesai dilakukan. Koneksi internet pelanggan sudah normal kembali.')">Setting Ulang ONT / WiFi</button>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Tindakan Perbaikan / Solusi Penyelesaian <span class="text-danger">*</span></label>
+                            <textarea name="note" id="resolveNoteInput" class="form-control" rows="3" placeholder="Tuliskan hasil perbaikan yang telah dilakukan..." required>Perbaikan jalur jaringan dan pengecekan perangkat telah selesai dilakukan. Koneksi internet sudah kembali normal dan stabil.</textarea>
+                        </div>
+
+                        <!-- Lampiran Foto Bukti Selesai -->
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold mb-1">
+                                    <i class="fas fa-camera text-success me-1"></i>Lampirkan Foto Bukti Selesai (Arsip & WA)
+                                </label>
+                                <input type="file" name="photos" class="form-control mb-2" accept="image/*" multiple onchange="previewUploadImages(this, 'previewResolvePhotos')">
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto (misal: Foto hasil cek redaman OPM normal & modem online)">
+                                <div id="previewResolvePhotos" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 d-flex flex-wrap gap-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_wa_customer" id="resolveSendWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="resolveSendWa">
+                                    <i class="fab fa-whatsapp text-success me-1"></i>Kirim WA Gangguan Selesai ke Pelanggan
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_photo_wa" id="resolveSendPhotoWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="resolveSendPhotoWa">
+                                    Sertakan Foto Bukti Selesai ke WA Pelanggan
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success fw-bold px-4">
+                        <i class="fas fa-check-circle me-1"></i>Selesaikan Tiket & Kirim WA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 5: EDIT DATA TEKNISI & AKUN LOGIN -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalEditTech" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form id="formEditTech" method="POST">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>Edit Data & Akun Login Teknisi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Teknisi</label>
+                        <input type="text" name="name" id="editTechName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nomor WhatsApp</label>
+                        <input type="text" name="phone" id="editTechPhone" class="form-control" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Username Login</label>
+                            <input type="text" name="username" id="editTechUsername" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Password Baru (Opsional)</label>
+                            <input type="password" name="password" class="form-control form-control-sm" placeholder="Kosongkan jika tetap">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Jabatan / Area</label>
+                        <input type="text" name="role" id="editTechRole" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select name="is_active" id="editTechActive" class="form-select">
+                            <option value="1">Aktif (Bisa Login & Menerima Notifikasi WA)</option>
+                            <option value="0">Nonaktif</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Catatan</label>
+                        <textarea name="notes" id="editTechNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 6: LIGHTBOX PRATINJAU FOTO ARSIP -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalPhotoPreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+            <div class="modal-header border-secondary py-2">
+                <h6 class="modal-title fw-bold" id="photoPreviewTitle">Pratinjau Foto Arsip Tiket</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-2" style="background: #0f172a;">
+                <img src="" id="photoPreviewImg" alt="Preview" class="img-fluid rounded" style="max-height: 75vh; object-fit: contain;">
+            </div>
+            <div class="modal-footer border-secondary py-2 justify-content-between">
+                <a href="#" id="photoPreviewDownload" download class="btn btn-sm btn-primary">
+                    <i class="fas fa-download me-1"></i>Unduh Foto Asli
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Buka tab otomatis berdasarkan URL hash (#tab-technicians, #tab-archive, #tab-templates)
+    document.addEventListener('DOMContentLoaded', function() {
+        const hash = window.location.hash;
+        if (hash === '#tab-technicians') switchTicketTab('tab-technicians-btn');
+        else if (hash === '#tab-archive') switchTicketTab('tab-archive-btn');
+        else if (hash === '#tab-templates') switchTicketTab('tab-templates-btn');
+    });
+
+    function switchTicketTab(btnId) {
+        const btn = document.getElementById(btnId);
+        if (btn && window.bootstrap) {
+            const tab = new bootstrap.Tab(btn);
+            tab.show();
+        }
+    }
+
+    function onSelectTicketCustomer(selectEl) {
+        const opt = selectEl.options[selectEl.selectedIndex];
+        if (!opt || !opt.value) return;
+        document.getElementById('createCustName').value = opt.getAttribute('data-name') || '';
+        document.getElementById('createCustPhone').value = opt.getAttribute('data-phone') || '';
+        document.getElementById('createCustAddress').value = opt.getAttribute('data-address') || '';
+    }
+
+    function toggleCustomTechInput(selectEl, boxId) {
+        const box = document.getElementById(boxId);
+        if (!box) return;
+        if (selectEl.value === 'custom') {
+            box.classList.remove('d-none');
+        } else {
+            box.classList.add('d-none');
+        }
+    }
+
+    function previewUploadImages(input, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        if (!input.files || input.files.length === 0) return;
+
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'rounded border shadow-xs';
+                img.style.width = '68px';
+                img.style.height = '68px';
+                img.style.objectFit = 'cover';
+                container.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const loggedInTechId = '<%= (isTechUser && user.technician_id) ? user.technician_id : "" %>';
+    const loggedInTechName = '<%= (isTechUser && user.name) ? user.name.replace(/'/g, "") : "" %>';
+
+    function openAcceptModal(id, ticketNum, custName, techId, techName, techPhone) {
+        document.getElementById('formAcceptTicket').action = '/tickets/' + id + '/accept';
+        document.getElementById('acceptTicketNum').textContent = ticketNum;
+        document.getElementById('acceptCustName').textContent = custName;
+
+        const targetTechId = loggedInTechId || techId;
+        const targetTechName = loggedInTechName || techName;
+
+        const techSelect = document.getElementById('acceptTechSelect');
+        if (targetTechId && techSelect.querySelector('option[value="' + targetTechId + '"]')) {
+            techSelect.value = targetTechId;
+            toggleCustomTechInput(techSelect, 'acceptCustomTechBox');
+        } else if (targetTechName) {
+            techSelect.value = 'custom';
+            toggleCustomTechInput(techSelect, 'acceptCustomTechBox');
+            document.getElementById('acceptCustomTechName').value = targetTechName;
+            document.getElementById('acceptCustomTechPhone').value = techPhone || '';
+        }
+
+        new bootstrap.Modal(document.getElementById('modalAcceptTicket')).show();
+    }
+
+    function openProgressModal(id, ticketNum, custName, techName) {
+        document.getElementById('formProgressTicket').action = '/tickets/' + id + '/progress';
+        document.getElementById('progressTicketNum').textContent = ticketNum;
+        document.getElementById('progressCustName').textContent = custName;
+        document.getElementById('progressTechName').value = loggedInTechName || techName || 'Tim Teknisi';
+        new bootstrap.Modal(document.getElementById('modalProgressTicket')).show();
+    }
+
+    function setProgressTemplate(title, note) {
+        document.getElementById('progressTitleInput').value = title;
+        document.getElementById('progressNoteInput').value = note;
+    }
+
+    function openResolveModal(id, ticketNum, custName, techName) {
+        document.getElementById('formResolveTicket').action = '/tickets/' + id + '/resolve';
+        document.getElementById('resolveTicketNum').textContent = ticketNum;
+        document.getElementById('resolveCustName').textContent = custName;
+        document.getElementById('resolveTechName').value = loggedInTechName || techName || 'Tim Teknisi';
+        new bootstrap.Modal(document.getElementById('modalResolveTicket')).show();
+    }
+
+    function setResolveNote(note) {
+        document.getElementById('resolveNoteInput').value = note;
+    }
+
+    function openEditTechModal(id, username, name, phone, role, isActive, notes) {
+        document.getElementById('formEditTech').action = '/tickets/technicians/' + id + '/edit';
+        document.getElementById('editTechUsername').value = username || phone;
+        document.getElementById('editTechName').value = name;
+        document.getElementById('editTechPhone').value = phone;
+        document.getElementById('editTechRole').value = role;
+        document.getElementById('editTechActive').value = String(isActive) === '1' ? '1' : '0';
+        document.getElementById('editTechNotes').value = notes || '';
+        new bootstrap.Modal(document.getElementById('modalEditTech')).show();
+    }
+
+    function previewTicketPhoto(filePath, title) {
+        document.getElementById('photoPreviewImg').src = filePath;
+        document.getElementById('photoPreviewTitle').textContent = title || 'Foto Arsip Tiket Gangguan';
+        document.getElementById('photoPreviewDownload').href = filePath;
+        new bootstrap.Modal(document.getElementById('modalPhotoPreview')).show();
+    }
+
+    function filterArchivePhotos() {
+        const stage = document.getElementById('archiveStageFilter').value;
+        document.querySelectorAll('.archive-photo-item').forEach(item => {
+            if (stage === 'all' || item.getAttribute('data-stage') === stage) {
+                item.classList.remove('d-none');
+            } else {
+                item.classList.add('d-none');
+            }
+        });
+    }
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,430 @@
+<%- include('partials/header', { title: 'Peta Jaringan & Pelanggan', activePage: 'map' }) %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h4 class="fw-bold mb-1">
+            <i class="fas fa-network-wired text-primary me-2"></i>Peta Jaringan & Pelanggan
+        </h4>
+        <p class="text-muted small mb-0">Visualisasi satelit infrastruktur FTTH (ODP, ODC, OLT, Switch, ONT) & jalur kabel jaringan</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <!-- Tombol Tambah Perangkat -->
+        <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="openAddNodeModal()" title="Tambah titik perangkat ODP, ODC, OLT, Switch, dll">
+            <i class="fas fa-plus-circle me-1"></i> Tambah Perangkat
+        </button>
+
+        <!-- Tombol Mode Tarik Kabel -->
+        <button class="btn btn-success btn-sm px-3 shadow-sm" id="btnToggleDrawCable" onclick="toggleCableDrawingMode()" title="Gambar jalur kabel fiber optic pada peta satelit">
+            <i class="fas fa-draw-polygon me-1"></i> Tarik Kabel
+        </button>
+
+        <!-- Tombol Tandai Rumah Pelanggan -->
+        <button class="btn btn-warning btn-sm px-3 shadow-sm text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#modalPinCustomer" title="Tandai titik rumah pelanggan di peta satelit">
+            <i class="fas fa-map-pin me-1"></i> Tandai Rumah Pelanggan
+        </button>
+
+        <!-- Tombol Fit All -->
+        <button class="btn btn-outline-secondary btn-sm px-3 shadow-sm" onclick="fitAllMarkers()" title="Pusatkan peta ke semua perangkat">
+            <i class="fas fa-expand-arrows-alt me-1"></i> Tampilkan Semua
+        </button>
+    </div>
+</div>
+
+<!-- Mode Drawing Banner Alert (Muncul saat menggambar kabel atau menandai lokasi) -->
+<div id="drawingAlertBanner" class="alert alert-warning border-warning shadow-sm py-2 px-3 mb-3 d-none align-items-center justify-content-between flex-wrap gap-2 animate__animated animate__fadeIn">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-pencil-ruler fa-lg text-warning me-2 animate-bounce"></i>
+        <div>
+            <strong id="drawingAlertTitle" class="d-block">Mode Menggambar Kabel Aktif</strong>
+            <small id="drawingAlertDesc" class="text-muted">Klik pada titik-titik di peta (sepanjang tiang/jalan). Dobel-klik atau klik tombol selesai untuk menyimpan.</small>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-warning btn-sm px-3 text-dark fw-bold" id="btnUndoPoint" onclick="undoCablePoint()" title="Batalkan titik terakhir">
+            <i class="fas fa-undo me-1"></i> Urungkan Titik
+        </button>
+        <button class="btn btn-success btn-sm px-3 fw-bold" id="btnFinishDrawing" onclick="finishCableDrawing()">
+            <i class="fas fa-check me-1"></i> Selesai & Simpan (<span id="cablePointsCount">0</span> Titik)
+        </button>
+        <button class="btn btn-outline-danger btn-sm px-3" onclick="cancelCableDrawing()">
+            <i class="fas fa-times me-1"></i> Batal
+        </button>
+    </div>
+</div>
+
+<!-- Layer Filter Controls & Legend Bar -->
+<div class="card shadow-sm border-0 mb-3 bg-white">
+    <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <span class="fw-bold small text-muted text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Filter Tampilan:</span>
+            
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkOLT" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkOLT">
+                    <span class="badge-icon-node badge-olt me-1"><i class="fas fa-server"></i></span> OLT (<span id="countOLT">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkODC" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkODC">
+                    <span class="badge-icon-node badge-odc me-1"><i class="fas fa-cubes"></i></span> ODC (<span id="countODC">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkODP" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkODP">
+                    <span class="badge-icon-node badge-odp me-1"><i class="fas fa-box"></i></span> ODP (<span id="countODP">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkSwitch" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkSwitch">
+                    <span class="badge-icon-node badge-switch me-1"><i class="fas fa-random"></i></span> Switch (<span id="countSwitch">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkONT" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkONT">
+                    <span class="badge-icon-node badge-ont me-1"><i class="fas fa-home"></i></span> Rumah / ONT (<span id="countONT">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkCables" checked onchange="toggleLayerFilter()">
+                <label class="form-check-label small fw-semibold" for="chkCables">
+                    <span class="legend-line me-1" style="background:#3b82f6;"></span> Kabel Jaringan (<span id="countCables">0</span>)
+                </label>
+            </div>
+
+            <div class="form-check form-check-inline m-0">
+                <input class="form-check-input filter-layer" type="checkbox" id="chkRadius" onchange="toggleLayerFilter()">
+                <label class="form-check-label small text-muted" for="chkRadius">
+                    <i class="far fa-circle text-warning me-1"></i> Radius ODP (150m)
+                </label>
+            </div>
+        </div>
+
+        <div class="text-muted small d-none d-xl-block">
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2">
+                <i class="fas fa-satellite me-1"></i> Google Satelit Murni
+            </span>
+            <span class="ms-1 text-muted">(Klik kanan di peta untuk menu pintas)</span>
+        </div>
+    </div>
+</div>
+
+<!-- Map Container Card -->
+<div class="card shadow-sm border-0 position-relative overflow-hidden">
+    <div class="card-body p-0">
+        <div id="customerMap"
+             data-lat="<%= mapCenter.lat %>"
+             data-lng="<%= mapCenter.lng %>"
+             data-zoom="<%= mapCenter.zoom %>"
+             style="height: calc(100vh - 270px); min-height: 520px; width: 100%;">
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 1: Tambah / Edit Perangkat (ODP, ODC, OLT, Switch, ONT)
+     ======================================================== -->
+<div class="modal fade" id="modalAddNode" tabindex="-1" aria-labelledby="modalAddNodeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalAddNodeLabel">
+                    <i class="fas fa-plus-circle text-primary me-2"></i>Tambah Titik Perangkat
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formAddNode" onsubmit="handleSaveNode(event)">
+                <input type="hidden" id="nodeId" name="id">
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tipe Perangkat <span class="text-danger">*</span></label>
+                        <select class="form-select" id="nodeType" name="type" required onchange="handleNodeTypeChange()">
+                            <option value="ODP" selected>ODP (Optical Distribution Point - Kotak Distribusi / Tiang)</option>
+                            <option value="ODC">ODC (Optical Distribution Cabinet - Feeder Cabinet)</option>
+                            <option value="OLT">OLT (Optical Line Terminal - Pusat / NOC)</option>
+                            <option value="Switch">Switch (Switch Hub / Distribusi)</option>
+                            <option value="ONT">ONT / Router (Rumah Pelanggan)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nama / Kode Perangkat <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nodeName" name="name" placeholder="Contoh: ODP-SLK-01 / ODC Pusat" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Kapasitas (Port/Core)</label>
+                            <input type="number" class="form-control" id="nodeCapacity" name="capacity" value="8" min="1">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Port Terpakai</label>
+                            <input type="number" class="form-control" id="nodeUsedCapacity" name="used_capacity" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Latitude <span class="text-danger">*</span></label>
+                            <input type="number" step="any" class="form-control" id="nodeLat" name="latitude" placeholder="-7.020xxx" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Longitude <span class="text-danger">*</span></label>
+                            <input type="number" step="any" class="form-control" id="nodeLng" name="longitude" placeholder="107.727xxx" required>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-1" onclick="startPickingNodeLocation()">
+                                <i class="fas fa-crosshairs me-1"></i> Klik Titik pada Peta untuk Isi Koordinat
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Alamat / Patokan Tiang</label>
+                        <input type="text" class="form-control" id="nodeAddress" name="address" placeholder="Contoh: Depan gang pos ronda / Tiang No. 14">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Catatan / Keterangan</label>
+                        <textarea class="form-control" id="nodeNotes" name="notes" rows="2" placeholder="Catatan redaman splitter, warna tube, dll"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-4" id="btnSubmitNode">Simpan Perangkat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 2: Simpan Kabel Jaringan (Polyline)
+     ======================================================== -->
+<div class="modal fade" id="modalSaveCable" tabindex="-1" aria-labelledby="modalSaveCableLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalSaveCableLabel">
+                    <i class="fas fa-route text-success me-2"></i>Simpan Jalur Kabel Jaringan
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formSaveCable" onsubmit="handleSaveCableSubmit(event)">
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nama Jalur Kabel <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="cableName" name="name" placeholder="Contoh: Distribusi ODC-01 ke ODP-05" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Tipe Kabel</label>
+                            <select class="form-select" id="cableType" name="cable_type" onchange="handleCableTypeChange()">
+                                <option value="feeder">Kabel Feeder (Backbone/ODC)</option>
+                                <option value="distribution" selected>Kabel Distribusi (Ke ODP)</option>
+                                <option value="dropcore">Kabel Drop Core (Ke Pelanggan)</option>
+                                <option value="backbone">Kabel Backbone Utama</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Jumlah Core</label>
+                            <select class="form-select" id="cableCoreCount" name="core_count">
+                                <option value="1">1 Core</option>
+                                <option value="2">2 Core</option>
+                                <option value="4">4 Core</option>
+                                <option value="6">6 Core</option>
+                                <option value="12" selected>12 Core</option>
+                                <option value="24">24 Core</option>
+                                <option value="48">48 Core</option>
+                                <option value="96">96 Core</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Warna Garis</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" id="cableColor" name="color" value="#3b82f6" title="Pilih warna kabel">
+                                <span class="small text-muted" id="cableColorLabel">Biru</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Panjang Kabel</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light" id="cableLengthDisplay" readonly value="0 m">
+                                <span class="input-group-text bg-light text-muted small">Otomatis</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Keterangan / Jalur Tiang</label>
+                        <textarea class="form-control" id="cableNotes" name="notes" rows="2" placeholder="Jalur tiang PLN / Telkom, kondisi kabel, dll"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success px-4" id="btnSubmitCable">Simpan Kabel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================
+     MODAL 3: Tandai Rumah Pelanggan
+     ======================================================== -->
+<div class="modal fade" id="modalPinCustomer" tabindex="-1" aria-labelledby="modalPinCustomerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalPinCustomerLabel">
+                    <i class="fas fa-map-pin text-warning me-2"></i>Tandai Rumah Pelanggan di Peta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <p class="small text-muted mb-3">
+                    Pilih pelanggan dari daftar di bawah ini, lalu klik tombol <strong>"Tandai di Peta Satelit"</strong> untuk mengklik langsung atap/rumah pelanggan pada citra satelit.
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Pilih Pelanggan <span class="text-danger">*</span></label>
+                    <div class="input-group mb-2">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0" id="searchCustomerInput" placeholder="Ketik nama atau ID pelanggan..." oninput="filterCustomerDropdown()">
+                    </div>
+                    <select class="form-select" id="pinCustomerId" size="6" style="max-height: 180px;">
+                        <option value="">-- Pilih Pelanggan dari Daftar --</option>
+                        <% if (typeof customers !== 'undefined' && customers && customers.length > 0) { %>
+                            <% customers.forEach(cust => { %>
+                                <option value="<%= cust.id %>" data-name="<%= cust.name %>" data-code="<%= cust.customer_id %>" data-lat="<%= cust.latitude || '' %>" data-lng="<%= cust.longitude || '' %>" data-address="<%= cust.address || '' %>">
+                                    <%= cust.name %> (<%= cust.customer_id || '-' %>) - <%= cust.latitude ? '📍 Sudah Ada Pin' : '⚪ Belum Ada Pin' %>
+                                </option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+
+                <div class="alert alert-light border small text-muted mb-0" id="pinCustomerInfo">
+                    <i class="fas fa-info-circle text-primary me-1"></i>Pilih salah satu pelanggan untuk melihat informasi alamat dan koordinat saat ini.
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-warning text-dark fw-bold px-4" id="btnStartPinLocation" onclick="startCustomerPinning()">
+                    <i class="fas fa-crosshairs me-1"></i> Tandai di Peta Satelit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Node Marker Badges */
+    .node-marker-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    .node-marker-container:hover {
+        transform: scale(1.22);
+        z-index: 9999 !important;
+    }
+
+    .node-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 13px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        border: 2px solid #ffffff;
+    }
+
+    .node-badge-olt {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .node-badge-odc {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border-radius: 8px;
+        width: 30px;
+        height: 30px;
+    }
+
+    .node-badge-odp {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+    }
+
+    .node-badge-switch {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+        border-radius: 7px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .node-badge-ont {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+    }
+
+    /* Small Icon preview inside filter checkboxes */
+    .badge-icon-node {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        color: #fff;
+        border-radius: 5px;
+        font-size: 10px;
+        vertical-align: middle;
+    }
+    .badge-olt { background: #ef4444; }
+    .badge-odc { background: #3b82f6; }
+    .badge-odp { background: #f59e0b; border-radius: 50%; }
+    .badge-switch { background: #8b5cf6; }
+    .badge-ont { background: #10b981; border-radius: 50%; }
+
+    .legend-line {
+        display: inline-block;
+        width: 16px;
+        height: 4px;
+        border-radius: 2px;
+        vertical-align: middle;
+    }
+
+    /* Leaflet popup customization */
+    .leaflet-popup-content-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+        font-family: inherit;
+    }
+    .leaflet-popup-content {
+        margin: 14px 16px;
+        line-height: 1.4;
+    }
+</style>
+
+<%- include('partials/footer') %>

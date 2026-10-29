@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Login | LJN Billing' %></title>
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            overflow-x: hidden;
+            position: relative;
+            transition: background 0.4s ease;
+        }
+        body.tech-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b, #0f3d3e);
+        }
+        body.cust-mode {
+            background: linear-gradient(135deg, #064e3b, #0f766e, #1e293b);
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            animation: bgPulse 15s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes bgPulse {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-2%, -2%) scale(1.05); }
+        }
+        .login-container {
+            width: 100%;
+            max-width: 455px;
+            padding: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px 34px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35),
+                        0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+        .portal-switcher {
+            display: flex;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            border: 1px solid #e2e8f0;
+            gap: 4px;
+        }
+        .portal-tab {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 9px 6px;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .portal-tab.active-admin {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .portal-tab.active-tech {
+            background: #ffffff;
+            color: #d97706;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .portal-tab.active-cust {
+            background: #ffffff;
+            color: #059669;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .login-brand {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+        .login-brand .brand-logo-img {
+            max-height: 76px;
+            max-width: 100%;
+            object-fit: contain;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            padding: 6px 14px;
+        }
+        .login-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1a1c23;
+            margin-bottom: 4px;
+        }
+        .login-brand p {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+        }
+        .badge-tech {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .badge-cust {
+            background: #d1fae5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+        .form-floating {
+            margin-bottom: 15px;
+        }
+        .form-floating .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1rem 0.75rem;
+            font-size: 0.94rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        .form-floating .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: #fff;
+        }
+        .form-floating label {
+            color: #94a3b8;
+            font-size: 0.88rem;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: #fff;
+            font-size: 0.96rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(59, 130, 246, 0.3);
+        }
+        .btn-login.btn-tech {
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            box-shadow: 0 5px 20px rgba(234, 88, 12, 0.3);
+        }
+        .btn-login.btn-cust {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            color: #fff;
+        }
+        .portal-info-box {
+            margin-top: 15px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.77rem;
+            line-height: 1.4;
+        }
+        .info-tech {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+        .info-cust {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.78rem;
+        }
+    </style>
+</head>
+<%
+    const currentMode = (typeof loginMode !== 'undefined') ? loginMode : 'pelanggan';
+%>
+<body class="<%= currentMode === 'teknisi' ? 'tech-mode' : (currentMode === 'pelanggan' ? 'cust-mode' : '') %>">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-brand">
+                <img src="/img/logo.png" alt="LJN Logo" class="brand-logo-img">
+                <h1 id="brandTitle">
+                    <%= currentMode === 'teknisi' ? 'Portal Teknisi' : (currentMode === 'admin' ? 'LJN Billing' : 'Portal Pelanggan') %>
+                </h1>
+                <p id="brandSubtitle">
+                    <%= currentMode === 'teknisi' ? 'Penanganan Tiket Gangguan Lapangan' : (currentMode === 'admin' ? 'Lintas Jaringan Nusantara - Solokanjeruk' : 'Layanan Pengaduan & Cek Progress Gangguan') %>
+                </p>
+                <div id="techBadge" class="mode-badge badge-tech <%= currentMode === 'teknisi' ? '' : 'd-none' %>">
+                    <i class="fas fa-tools"></i> AKSES KHUSUS TEKNISI LAPANGAN
+                </div>
+                <div id="custBadge" class="mode-badge badge-cust <%= currentMode === 'pelanggan' ? '' : 'd-none' %>">
+                    <i class="fas fa-headset"></i> KHUSUS PELANGGAN (NOMOR WHATSAPP)
+                </div>
+                <% if (currentMode === 'admin') { %>
+                <div class="mode-badge" style="background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd;">
+                    <i class="fas fa-user-shield"></i> AKSES KHUSUS ADMINISTRATOR
+                </div>
+                <% } %>
+
+    
+            </div>
+
+            <% if (currentMode === 'pelanggan') { %>
+            <!-- ================= LOGIN PELANGGAN: NOMOR WHATSAPP + OTP ================= -->
+            <div id="otpWrapper">
+                <!-- Langkah 1: Input Nomor WhatsApp -->
+                <form id="otpPhoneForm" autocomplete="off">
+                    <div class="form-floating">
+                        <input type="tel" inputmode="numeric" class="form-control" id="phoneInput" name="phone"
+                               placeholder="Nomor WhatsApp" maxlength="18" required autofocus>
+                        <label for="phoneInput"><i class="fab fa-whatsapp me-2"></i>Nomor WhatsApp Terdaftar (08xxxxxxxxxx)</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="rememberOtp">
+                        <label class="form-check-label text-muted small" for="rememberOtp">Ingat sesi saya di perangkat ini</label>
+                    </div>
+                    <button type="submit" id="btnSendOtp" class="btn btn-login btn-cust">
+                        <i class="fas fa-paper-plane me-2"></i><span>Kirim Kode OTP ke WhatsApp</span>
+                    </button>
+                </form>
+
+                <!-- Langkah 2: Input Kode OTP -->
+                <form id="otpCodeForm" class="d-none" autocomplete="off">
+                    <div class="text-center mb-3">
+                        <div class="small text-muted">Kode OTP 6 digit telah dikirim ke WhatsApp</div>
+                        <div class="fw-bold text-dark" id="otpMaskedPhone">-</div>
+                    </div>
+                    <div class="form-floating">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-center fw-bold"
+                               id="otpCodeInput" maxlength="6" placeholder="Kode OTP"
+                               style="letter-spacing: 0.5em; font-size: 1.4rem;" autocomplete="one-time-code" required>
+                        <label for="otpCodeInput" class="w-100 text-center"><i class="fas fa-key me-2"></i>Masukkan Kode OTP</label>
+                    </div>
+                    <button type="submit" id="btnVerifyOtp" class="btn btn-login btn-cust">
+                        <i class="fas fa-shield-alt me-2"></i><span>Verifikasi & Masuk</span>
+                    </button>
+                    <div class="d-flex justify-content-between align-items-center mt-3 small">
+                        <a href="#" id="btnChangePhone" class="text-decoration-none text-muted"><i class="fas fa-arrow-left me-1"></i>Ganti nomor</a>
+                        <a href="#" id="btnResendOtp" class="text-decoration-none fw-bold text-success disabled-link">
+                            Kirim ulang kode <span id="resendTimer"></span>
+                        </a>
+                    </div>
+                </form>
+
+                <!-- Langkah 3: Pilih Akun (jika 1 nomor dipakai beberapa akun) -->
+                <div id="accountChooser" class="d-none">
+                    <div class="text-center mb-3">
+                        <div class="fw-bold text-dark">Pilih Akun Pelanggan</div>
+                        <div class="small text-muted">Nomor ini terdaftar pada beberapa akun</div>
+                    </div>
+                    <div id="accountList" class="d-grid gap-2"></div>
+                </div>
+            </div>
+            <style>
+                .disabled-link { pointer-events: none; opacity: 0.55; }
+                .account-item { text-align: left; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 10px 14px; transition: all .2s; width: 100%; }
+                .account-item:hover { border-color: #10b981; background: #ecfdf5; }
+            </style>
+            <% } else { %>
+            <form action="/auth/login" method="POST" id="loginForm">
+                <input type="hidden" name="login_mode" id="loginModeInput" value="<%= currentMode %>">
+
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="<%= currentMode === 'teknisi' ? 'Username Teknisi' : 'Username Admin' %>" required autofocus>
+                    <label for="username" id="usernameLabel">
+                        <i class="fas fa-id-card me-2"></i><%= currentMode === 'teknisi' ? 'Username / No. WA Teknisi' : 'Username Admin' %>
+                    </label>
+                </div>
+
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Password" required>
+                    <label for="password" id="passwordLabel">
+                        <i class="fas fa-lock me-2"></i>Password
+                    </label>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                        <label class="form-check-label text-muted small" for="remember">Ingat sesi saya</label>
+                    </div>
+                    <% if (currentMode === 'admin') { %>
+                    <a href="javascript:void(0)" id="btnForgotAdminPass" class="text-decoration-none small text-primary fw-bold">
+                        <i class="fas fa-key me-1"></i>Reset / Lupa Sandi?
+                    </a>
+                    <% } %>
+
+    
+                </div>
+
+                <button type="submit" id="btnSubmitLogin" class="btn btn-login <%= currentMode === 'teknisi' ? 'btn-tech' : '' %>">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    <span id="btnSubmitText">
+                        <%= currentMode === 'teknisi' ? 'Masuk Portal Teknisi' : 'Masuk Dashboard Admin' %>
+                    </span>
+                </button>
+            </form>
+            <% } %>
+
+    
+
+            <div id="techInfoBox" class="portal-info-box info-tech <%= currentMode === 'teknisi' ? '' : 'd-none' %>">
+                <i class="fas fa-info-circle me-1"></i>
+                <strong>Portal Teknisi:</strong> Khusus akun Teknisi Lapangan untuk melihat laporan gangguan dan mengupdate progress perbaikan.
+            </div>
+
+            <div id="custInfoBox" class="portal-info-box info-cust <%= currentMode === 'pelanggan' ? '' : 'd-none' %>">
+                <i class="fas fa-info-circle me-1"></i>
+                <strong>Cara Masuk Pelanggan:</strong> Masukkan <strong>Nomor WhatsApp</strong> yang terdaftar di kami, lalu masukkan <strong>kode OTP</strong> yang dikirim ke WhatsApp Anda. Tanpa password.
+            </div>
+        </div>
+        <p class="footer-text">&copy; <%= new Date().getFullYear() %> PT. Lintas Jaringan Nusantara. All rights reserved.</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <% if (currentMode === 'pelanggan') { %>
+    <script>
+    (function () {
+        const phoneForm = document.getElementById('otpPhoneForm');
+        const codeForm = document.getElementById('otpCodeForm');
+        const chooser = document.getElementById('accountChooser');
+        const phoneInput = document.getElementById('phoneInput');
+        const codeInput = document.getElementById('otpCodeInput');
+        const btnSend = document.getElementById('btnSendOtp');
+        const btnVerify = document.getElementById('btnVerifyOtp');
+        const btnResend = document.getElementById('btnResendOtp');
+        const btnChange = document.getElementById('btnChangePhone');
+        const timerEl = document.getElementById('resendTimer');
+        const maskedEl = document.getElementById('otpMaskedPhone');
+        const rememberEl = document.getElementById('rememberOtp');
+        let timerId = null;
+
+        function toast(icon, text) {
+            Swal.fire({ icon: icon, title: icon === 'error' ? 'Gagal' : (icon === 'success' ? 'Berhasil' : 'Perhatian'), text: text, timer: 4500, showConfirmButton: false });
+        }
+
+        async function postJson(url, body) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            let data = {};
+            try { data = await res.json(); } catch (e) {}
+            return { status: res.status, data: data };
+        }
+
+        function setLoading(btn, loading, loadingText) {
+            const span = btn.querySelector('span');
+            if (loading) {
+                btn.dataset.orig = span.textContent;
+                span.textContent = loadingText;
+                btn.disabled = true;
+            } else {
+                span.textContent = btn.dataset.orig || span.textContent;
+                btn.disabled = false;
+            }
+        }
+
+        function startCooldown(sec) {
+            clearInterval(timerId);
+            let left = sec;
+            btnResend.classList.add('disabled-link');
+            timerEl.textContent = '(' + left + ' dtk)';
+            timerId = setInterval(function () {
+                left--;
+                if (left <= 0) {
+                    clearInterval(timerId);
+                    timerEl.textContent = '';
+                    btnResend.classList.remove('disabled-link');
+                } else {
+                    timerEl.textContent = '(' + left + ' dtk)';
+                }
+            }, 1000);
+        }
+
+        async function requestOtp() {
+            const phone = phoneInput.value.trim();
+            setLoading(btnSend, true, 'Mengirim kode...');
+            const r = await postJson('/auth/otp/request', { phone: phone });
+            setLoading(btnSend, false);
+            if (r.data && r.data.success) {
+                maskedEl.textContent = r.data.maskedPhone;
+                phoneForm.classList.add('d-none');
+                codeForm.classList.remove('d-none');
+                codeInput.value = '';
+                codeInput.focus();
+                startCooldown(r.data.cooldownSec || 60);
+                return true;
+            }
+            if (r.data && r.data.retryAfterSec && !codeForm.classList.contains('d-none')) {
+                startCooldown(r.data.retryAfterSec);
+            }
+            toast('error', (r.data && r.data.message) || 'Gagal meminta kode OTP.');
+            return false;
+        }
+
+        phoneForm.addEventListener('submit', function (e) { e.preventDefault(); requestOtp(); });
+
+        btnResend.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (btnResend.classList.contains('disabled-link')) return;
+            requestOtp().then(function (ok) { if (ok) toast('success', 'Kode OTP baru telah dikirim.'); });
+        });
+
+        btnChange.addEventListener('click', function (e) {
+            e.preventDefault();
+            clearInterval(timerId);
+            codeForm.classList.add('d-none');
+            phoneForm.classList.remove('d-none');
+            phoneInput.focus();
+        });
+
+        codeInput.addEventListener('input', function () {
+            codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6);
+        });
+
+        codeForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const code = codeInput.value.trim();
+            if (code.length !== 6) { toast('warning', 'Masukkan 6 digit kode OTP.'); return; }
+            setLoading(btnVerify, true, 'Memverifikasi...');
+            const r = await postJson('/auth/otp/verify', { code: code, remember: rememberEl.checked });
+            setLoading(btnVerify, false);
+
+            if (r.data && r.data.success) {
+                if (r.data.chooseAccount) { showChooser(r.data.accounts); return; }
+                window.location.href = r.data.redirect || '/portal';
+                return;
+            }
+            if (r.data && r.data.expired) {
+                codeForm.classList.add('d-none');
+                phoneForm.classList.remove('d-none');
+            }
+            codeInput.value = '';
+            codeInput.focus();
+            toast('error', (r.data && r.data.message) || 'Verifikasi OTP gagal.');
+        });
+
+        function showChooser(accounts) {
+            codeForm.classList.add('d-none');
+            chooser.classList.remove('d-none');
+            const list = document.getElementById('accountList');
+            list.innerHTML = '';
+            accounts.forEach(function (acc) {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'account-item';
+                const t = document.createElement('div');
+                t.className = 'fw-bold text-dark';
+                t.textContent = acc.name;
+                const s = document.createElement('div');
+                s.className = 'small text-muted';
+                s.textContent = (acc.customer_id || '-') + (acc.address ? ' • ' + acc.address : '');
+                b.appendChild(t); b.appendChild(s);
+                b.addEventListener('click', async function () {
+                    const r = await postJson('/auth/otp/select-account', { customer_id: acc.id });
+                    if (r.data && r.data.success) { window.location.href = r.data.redirect || '/portal'; }
+                    else { toast('error', (r.data && r.data.message) || 'Gagal memilih akun.'); }
+                });
+                list.appendChild(b);
+            });
+        }
+    })();
+    </script>
+    <% } %>
+
+    
+    <% if (currentMode === 'admin') { %>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnForgot = document.getElementById('btnForgotAdminPass');
+        if (!btnForgot) return;
+
+        btnForgot.addEventListener('click', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Reset Sandi Login Admin',
+                html: `
+                    <div class="text-start small text-muted mb-3">
+                        Kode OTP verifikasi akan dikirimkan otomatis melalui <strong>WhatsApp</strong> ke nomor WhatsApp Admin yang terdaftar di sistem.
+                    </div>
+                    <div class="text-center p-3 bg-light rounded border mb-2">
+                        <i class="fab fa-whatsapp text-success fa-2x mb-2 d-block"></i>
+                        <span class="fw-semibold text-dark small">Kirim OTP ke WhatsApp Admin untuk mereset kata sandi</span>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-paper-plane me-1"></i> Kirim Kode OTP',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#10b981',
+                showLoaderOnConfirm: true,
+                preConfirm: async () => {
+                    try {
+                        const response = await fetch('/auth/admin/request-reset-otp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (!data.success) {
+                            throw new Error(data.message || 'Gagal meminta kode OTP');
+                        }
+                        return data;
+                    } catch (error) {
+                        Swal.showValidationMessage(error.message);
+                    }
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const phoneMasked = result.value.phone || '';
+                    Swal.fire({
+                        title: 'Verifikasi OTP & Sandi Baru',
+                        html: `
+                            <div class="text-start small text-muted mb-3">
+                                Kode OTP telah dikirim ke nomor WhatsApp: <strong class="text-dark">${phoneMasked}</strong>.
+                            </div>
+                            <div class="form-group text-start mb-3">
+                                <label class="form-label fw-bold small text-dark">Kode OTP (6 Digit)</label>
+                                <input type="text" id="swalOtpCode" class="form-control text-center font-monospace fw-bold" maxlength="6" placeholder="123456" style="letter-spacing: 0.3em; font-size: 1.2rem;" autofocus>
+                            </div>
+                            <div class="form-group text-start mb-2">
+                                <label class="form-label fw-bold small text-dark">Kata Sandi Baru</label>
+                                <input type="password" id="swalNewPassword" class="form-control" placeholder="Kata sandi baru (min. 4 karakter)">
+                            </div>
+                            <div class="form-check text-start mt-2 pt-2 border-top">
+                                <input class="form-check-input" type="checkbox" id="swalResetDefault">
+                                <label class="form-check-label small text-muted" for="swalResetDefault">
+                                    Atau centang untuk reset langsung ke default (<code>admin123</code>)
+                                </label>
+                            </div>
+                        `,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-check me-1"></i> Simpan Sandi Baru',
+                        cancelButtonText: 'Batal',
+                        confirmButtonColor: '#1d4ed8',
+                        showLoaderOnConfirm: true,
+                        preConfirm: async () => {
+                            const otp = document.getElementById('swalOtpCode').value.trim();
+                            const isDefault = document.getElementById('swalResetDefault').checked;
+                            const newPass = document.getElementById('swalNewPassword').value.trim();
+
+                            if (!otp || otp.length !== 6) {
+                                Swal.showValidationMessage('Kode OTP 6 digit wajib diisi.');
+                                return false;
+                            }
+
+                            let finalPass = 'admin123';
+                            if (!isDefault) {
+                                if (!newPass || newPass.length < 4) {
+                                    Swal.showValidationMessage('Kata sandi baru minimal 4 karakter (atau centang opsi reset ke default).');
+                                    return false;
+                                }
+                                finalPass = newPass;
+                            }
+
+                            try {
+                                const response = await fetch('/auth/admin/verify-reset-password', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ otp, new_password: finalPass })
+                                });
+                                const data = await response.json();
+                                if (!data.success) {
+                                    throw new Error(data.message || 'Verifikasi OTP gagal.');
+                                }
+                                return data;
+                            } catch (error) {
+                                Swal.showValidationMessage(error.message);
+                            }
+                        },
+                        allowOutsideClick: () => !Swal.isLoading()
+                    }).then((verifyResult) => {
+                        if (verifyResult.isConfirmed && verifyResult.value) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sandi Berhasil Direset!',
+                                text: verifyResult.value.message || 'Silakan login dengan kata sandi baru Anda.',
+                                confirmButtonText: 'OK, Siap Login'
+                            }).then(() => {
+                                const userInp = document.getElementById('username');
+                                const passInp = document.getElementById('password');
+                                if (userInp && verifyResult.value.username) userInp.value = verifyResult.value.username;
+                                if (passInp) {
+                                    passInp.value = '';
+                                    passInp.focus();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    });
+    </script>
+    <% } %>
+
+    <% if (typeof messages !== 'undefined' && messages) { %>
+        <% if (messages.success && messages.success.length > 0) { %>
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: '<%= messages.success[0].replace(/'/g, "\\'") %>',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            </script>
+        <% } %>
+
+    
+        <% if (messages.error && messages.error.length > 0) { %>
+            <script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: '<%= messages.error[0].replace(/'/g, "\\'") %>',
+                    timer: 5000
+                });
+            </script>
+        <% } %>
+
+    
+        <% if (messages.warning && messages.warning.length > 0) { %>
+            <script>
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Perhatian',
+                    text: '<%= messages.warning[0].replace(/'/g, "\\'") %>',
+                    timer: 5000
+                });
+            </script>
+        <% } %>
+
+    
+    <% } %>
+
+    
+</body>
+</html>

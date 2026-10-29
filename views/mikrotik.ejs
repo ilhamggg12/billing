@@ -1,0 +1,639 @@
+<%- include('partials/header', { title: 'MikroTik', activePage: 'mikrotik' }) %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fas fa-network-wired text-primary me-2"></i>MikroTik</h4>
+        <p class="text-muted mb-0">Manajemen multi-koneksi perangkat MikroTik Router</p>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Dropdown Pemilih Router Aktif -->
+        <% if (typeof routers !== 'undefined' && routers.length > 0) { %>
+        <div class="dropdown">
+            <button class="btn btn-outline-dark dropdown-toggle fw-semibold shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-server text-primary me-2"></i><%= currentRouter ? currentRouter.name : 'Pilih Router' %>
+                <% if (currentRouter && currentRouter.is_default === 1) { %>
+                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">Default</span>
+                <% } %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg" style="min-width: 260px;">
+                <li class="dropdown-header text-uppercase fw-bold text-muted small">Pilih Router MikroTik</li>
+                <% routers.forEach(function(r) { %>
+                <li>
+                    <a class="dropdown-item d-flex justify-content-between align-items-center py-2 <%= currentRouter && currentRouter.id === r.id ? 'active' : '' %>" href="/mikrotik?router_id=<%= r.id %>">
+                        <div>
+                            <div class="fw-bold"><%= r.name %></div>
+                            <small class="text-muted <%= currentRouter && currentRouter.id === r.id ? 'text-white-50' : '' %>">
+                                <code><%= r.host %>:<%= r.port %></code>
+                            </small>
+                        </div>
+                        <% if (r.is_default === 1) { %>
+                            <span class="badge bg-warning text-dark" style="font-size: 0.68rem;">Default</span>
+                        <% } %>
+                    </a>
+                </li>
+                <% }); %>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button type="button" class="dropdown-item text-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAddRouter">
+                        <i class="fas fa-plus-circle me-1"></i> Tambah Router Baru
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <% } %>
+
+        <!-- Status & Tombol Koneksi -->
+        <% if (connected) { %>
+            <span class="badge bg-success fs-6 px-3 py-2 shadow-sm"><i class="fas fa-check-circle me-1"></i>Terhubung</span>
+            <form action="/mikrotik/disconnect" method="POST" class="d-inline">
+                <input type="hidden" name="router_id" value="<%= currentRouter ? currentRouter.id : '' %>">
+                <button type="submit" class="btn btn-outline-danger btn-sm shadow-sm">
+                    <i class="fas fa-unlink me-1"></i>Putuskan
+                </button>
+            </form>
+        <% } else { %>
+            <span class="badge bg-danger fs-6 px-3 py-2 shadow-sm"><i class="fas fa-times-circle me-1"></i>Tidak Terhubung</span>
+            <% if (currentRouter) { %>
+            <form action="/mikrotik/connect" method="POST" class="d-inline">
+                <input type="hidden" name="router_id" value="<%= currentRouter.id %>">
+                <button type="submit" class="btn btn-primary btn-sm shadow-sm">
+                    <i class="fas fa-plug me-1"></i>Hubungkan
+                </button>
+            </form>
+            <% } %>
+        <% } %>
+
+        <!-- Tombol Tambah Router -->
+        <button type="button" class="btn btn-success btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddRouter">
+            <i class="fas fa-plus me-1"></i>Tambah Router
+        </button>
+    </div>
+</div>
+
+<% if (currentRouter) { %>
+<!-- Ringkasan Router Aktif -->
+<div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body py-3">
+        <div class="row align-items-center g-2">
+            <div class="col-md-3">
+                <small class="text-muted d-block">Router Aktif</small>
+                <span class="fw-bold fs-6 text-dark"><i class="fas fa-server text-primary me-1"></i><%= currentRouter.name %></span>
+                <% if (currentRouter.is_default === 1) { %>
+                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">Router Utama</span>
+                <% } %>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">IP Host & Port API</small>
+                <code class="fw-bold fs-6 text-primary"><%= currentRouter.host %>:<%= currentRouter.port %></code>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">Address-List Isolir</small>
+                <span class="badge bg-danger fs-6"><%= currentRouter.isolir_address_list || 'Expired' %></span>
+            </div>
+            <div class="col-md-3 text-md-end">
+                <small class="text-muted d-block">Pelanggan Terhubung</small>
+                <span class="badge bg-primary fs-6 px-3"><%= customerCountMap[currentRouter.id] || 0 %> Pelanggan</span>
+            </div>
+        </div>
+    </div>
+</div>
+<% } %>
+
+<% if (!connected && currentRouter) { %>
+    <!-- Not Connected State -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-network-wired fa-4x text-muted mb-3"></i>
+            <h5 class="fw-bold">Router "<%= currentRouter.name %>" Belum Terhubung</h5>
+            <p class="text-muted mb-3">
+                Host: <code><%= currentRouter.host %>:<%= currentRouter.port %></code> | User: <code><%= currentRouter.username %></code>
+            </p>
+            <form action="/mikrotik/connect" method="POST" class="d-inline">
+                <input type="hidden" name="router_id" value="<%= currentRouter.id %>">
+                <button type="submit" class="btn btn-primary px-4 py-2 me-2">
+                    <i class="fas fa-plug me-2"></i>Hubungkan Sekarang
+                </button>
+            </form>
+            <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-toggle="modal" data-bs-target="#modalEditRouter" onclick="populateEditModal(<%= JSON.stringify(currentRouter) %>)">
+                <i class="fas fa-edit me-2"></i>Edit Konfigurasi
+            </button>
+        </div>
+    </div>
+<% } else if (connected && systemResource) { %>
+    <!-- System Resource Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-clock text-primary fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted">Uptime</small>
+                            <p class="fw-bold mb-0"><%= systemResource.uptime || '-' %></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-microchip text-warning fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted">CPU Load</small>
+                            <p class="fw-bold mb-0"><%= systemResource['cpu-load'] || systemResource.cpuLoad || '0' %>%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-memory text-info fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted">Memory</small>
+                            <% 
+                                var totalMem = parseInt(systemResource['total-memory'] || systemResource.totalMemory || 0);
+                                var freeMem = parseInt(systemResource['free-memory'] || systemResource.freeMemory || 0);
+                                var usedMem = totalMem - freeMem;
+                                var memPercent = totalMem > 0 ? Math.round((usedMem / totalMem) * 100) : 0;
+                            %>
+                            <p class="fw-bold mb-0"><%= memPercent %>% Terpakai</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-info-circle text-success fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted">Versi</small>
+                            <p class="fw-bold mb-0"><%= systemResource.version || '-' %></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<% } %>
+
+<!-- Nav Tabs -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active fw-semibold" data-bs-toggle="tab" href="#tabSecrets">
+            <i class="fas fa-key me-1"></i>PPPoE Secrets
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold" data-bs-toggle="tab" href="#tabActive">
+            <i class="fas fa-signal me-1"></i>Koneksi Aktif
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold text-danger" data-bs-toggle="tab" href="#tabAddressList">
+            <i class="fas fa-ban me-1"></i>Isolir (Firewall Address List)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link fw-semibold text-dark" data-bs-toggle="tab" href="#tabRouters">
+            <i class="fas fa-server me-1 text-primary"></i>Kelola Semua Router (<%= typeof routers !== 'undefined' ? routers.length : 0 %>)
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- PPPoE Secrets Tab -->
+    <div class="tab-pane fade show active" id="tabSecrets">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-3 p-md-4">
+                <table class="table table-hover align-middle datatable w-100" id="secretsTable" style="width: 100%;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Service</th>
+                            <th>Profile</th>
+                            <th>Status</th>
+                            <th width="100">Aksi</th>
+                        </tr>
+                    </thead>
+                        <tbody>
+                            <% if (secrets && secrets.length > 0) { %>
+                                <% secrets.forEach(function(secret) { %>
+                                <tr>
+                                    <td class="fw-semibold"><%= secret.name %></td>
+                                    <td><%= secret.service || 'pppoe' %></td>
+                                    <td><span class="badge bg-light text-dark"><%= secret.profile || 'default' %></span></td>
+                                    <td>
+                                        <% if (secret.disabled === 'true' || secret.disabled === true) { %>
+                                            <span class="badge bg-secondary">Disabled</span>
+                                        <% } else { %>
+                                            <span class="badge bg-success">Enabled</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <form action="/mikrotik/remove-secret/<%= encodeURIComponent(secret.name) %>" method="POST" class="d-inline">
+                                            <input type="hidden" name="router_id" value="<%= currentRouter ? currentRouter.id : '' %>">
+                                            <button type="button" class="btn btn-outline-danger btn-sm btn-delete" title="Hapus Secret">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Connections Tab -->
+    <div class="tab-pane fade" id="tabActive">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Koneksi Aktif di <%= currentRouter ? currentRouter.name : 'MikroTik' %></h6>
+                <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <table class="table table-hover align-middle datatable w-100" id="activeTable" style="width: 100%;">
+                    <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Address</th>
+                                <th>Uptime</th>
+                                <th>Caller ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (activeConnections && activeConnections.length > 0) { %>
+                                <% activeConnections.forEach(function(conn) { %>
+                                <tr>
+                                    <td class="fw-semibold"><%= conn.name %></td>
+                                    <td><code><%= conn.address || '-' %></code></td>
+                                    <td><%= conn.uptime || '-' %></td>
+                                    <td><%= conn['caller-id'] || conn.callerId || '-' %></td>
+                                </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Address List (Isolir) Tab -->
+    <div class="tab-pane fade" id="tabAddressList">
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body p-3 p-md-4">
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Daftar IP pelanggan yang sedang diisolir pada firewall address-list router <strong><%= currentRouter ? currentRouter.name : '' %></strong> (List: <code><%= currentRouter ? currentRouter.isolir_address_list : 'Expired' %></code>).
+                </div>
+                <table class="table table-hover align-middle datatable w-100" id="addressListTable" style="width: 100%;">
+                    <thead class="table-light">
+                            <tr>
+                                <th>List Name</th>
+                                <th>IP Address</th>
+                                <th>Komentar / Keterangan</th>
+                                <th>Disabled</th>
+                                <th width="90">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof addressLists !== 'undefined' && addressLists && addressLists.length > 0) { %>
+                                <% addressLists.forEach(function(item) { %>
+                                <tr>
+                                    <td>
+                                        <% const isExp = (item.list || '').toLowerCase() === 'expired'; %>
+                                        <span class="badge <%= isExp ? 'bg-danger' : 'bg-warning text-dark' %>">
+                                            <%= item.list %>
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-dark font-monospace"><%= item.address %></td>
+                                    <td class="text-muted small"><%= item.comment || '-' %></td>
+                                    <td><%= item.disabled === 'true' || item.disabled === true ? 'Yes' : 'No' %></td>
+                                    <td>
+                                        <form action="/mikrotik/remove-address-list" method="POST" class="d-inline" onsubmit="return confirm('Hapus IP <%= item.address %> dari address-list <%= item.list %>?')">
+                                            <input type="hidden" name="router_id" value="<%= currentRouter ? currentRouter.id : '' %>">
+                                            <input type="hidden" name="address" value="<%= item.address %>">
+                                            <input type="hidden" name="list" value="<%= item.list %>">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus dari Isolir (Buka Blokir)">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daftar Semua Router Tab -->
+    <div class="tab-pane fade" id="tabRouters">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-server text-primary me-2"></i>Daftar Perangkat MikroTik Router</h6>
+                    <small class="text-muted">Kelola multi-router untuk distribusi pelanggan dan isolir</small>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAddRouter">
+                    <i class="fas fa-plus me-1"></i>Tambah Router Baru
+                </button>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <table class="table table-hover align-middle datatable w-100" id="routersTable" style="width: 100%;">
+                    <thead class="table-light">
+                            <tr>
+                                <th width="40">No</th>
+                                <th>Nama Router</th>
+                                <th>Host & Port</th>
+                                <th>Username</th>
+                                <th>Address-List</th>
+                                <th>Pelanggan</th>
+                                <th>Status</th>
+                                <th width="200" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof routers !== 'undefined' && routers && routers.length > 0) { %>
+                                <% routers.forEach(function(r, idx) { %>
+                                <tr>
+                                    <td><%= idx + 1 %></td>
+                                    <td>
+                                        <span class="fw-bold text-dark"><%= r.name %></span>
+                                        <% if (r.is_default === 1) { %>
+                                            <span class="badge bg-warning text-dark ms-1" title="Router Utama (Default)"><i class="fas fa-star me-1"></i>Default</span>
+                                        <% } %>
+                                        <% if (r.description) { %>
+                                            <div class="small text-muted"><%= r.description %></div>
+                                        <% } %>
+                                    </td>
+                                    <td><code><%= r.host %>:<%= r.port %></code></td>
+                                    <td><%= r.username %></td>
+                                    <td><span class="badge bg-danger"><%= r.isolir_address_list || 'Expired' %></span></td>
+                                    <td>
+                                        <a href="/customers" class="badge bg-primary text-decoration-none" title="Lihat Pelanggan">
+                                            <%= customerCountMap[r.id] || 0 %> Pelanggan
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <% if (routerStatusMap[r.id]) { %>
+                                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Online</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary"><i class="fas fa-circle me-1"></i>Siap</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Buka Router Ini -->
+                                            <a href="/mikrotik?router_id=<%= r.id %>" class="btn btn-outline-primary" title="Buka Dashboard Router Ini">
+                                                <i class="fas fa-external-link-alt"></i> Buka
+                                            </a>
+                                            <!-- Uji Koneksi -->
+                                            <button type="button" class="btn btn-outline-info btn-test-router" data-id="<%= r.id %>" data-name="<%= r.name %>" title="Uji Koneksi">
+                                                <i class="fas fa-plug"></i> Tes
+                                            </button>
+                                            <!-- Jadikan Default -->
+                                            <% if (r.is_default !== 1) { %>
+                                            <form action="/mikrotik/routers/<%= r.id %>/set-default" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-outline-warning" title="Jadikan Router Utama (Default)">
+                                                    <i class="fas fa-star"></i>
+                                                </button>
+                                            </form>
+                                            <% } %>
+                                            <!-- Edit -->
+                                            <button type="button" class="btn btn-outline-secondary" title="Edit" data-bs-toggle="modal" data-bs-target="#modalEditRouter" onclick="populateEditModal(<%= JSON.stringify(r) %>)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <!-- Hapus -->
+                                            <% if (routers.length > 1) { %>
+                                            <form action="/mikrotik/routers/<%= r.id %>/delete" method="POST" class="d-inline">
+                                                <button type="button" class="btn btn-outline-danger btn-delete" title="Hapus Router">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: Tambah Router Baru -->
+<!-- ============================================ -->
+<div class="modal fade" id="modalAddRouter" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/mikrotik/routers" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle text-success me-2"></i>Tambah Router MikroTik</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Router <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" placeholder="contoh: Router POP Timur / OLT 2" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold">IP Address / Host <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="host" placeholder="contoh: 172.16.0.1 atau 192.168.88.1" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold">Port API <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="port" value="8728" placeholder="8728" required>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.70rem;">
+                                <i class="fas fa-info-circle text-primary me-1"></i>Port <strong>API RouterOS</strong> (IP &gt; Services &gt; api). <u>Bukan</u> port WinBox (8291/8292).
+                            </small>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Username API <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="username" placeholder="admin" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Password API</label>
+                            <input type="password" class="form-control" name="password" placeholder="Password router">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Address-List Isolir</label>
+                        <input type="text" class="form-control" name="isolir_address_list" value="Expired" placeholder="Expired atau ISOLIR">
+                        <div class="form-text">Nama firewall address-list yang digunakan router ini untuk redirect isolir.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Deskripsi / Lokasi (Opsional)</label>
+                        <textarea class="form-control" name="description" rows="2" placeholder="Catatan lokasi router, rack, dll..."></textarea>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_default" value="1" id="addDefaultSwitch">
+                        <label class="form-check-label fw-semibold" for="addDefaultSwitch">Jadikan sebagai Router Utama (Default)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Simpan Router</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: Edit Router -->
+<!-- ============================================ -->
+<div class="modal fade" id="modalEditRouter" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formEditRouter" action="" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit text-primary me-2"></i>Edit Router MikroTik</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Router <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold">IP Address / Host <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_host" name="host" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold">Port API <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="edit_port" name="port" required>
+                            <small class="text-muted d-block mt-1" style="font-size: 0.70rem;">
+                                <i class="fas fa-info-circle text-primary me-1"></i>Port <strong>API RouterOS</strong> (IP &gt; Services &gt; api). <u>Bukan</u> port WinBox (8291/8292).
+                            </small>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Username API <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_username" name="username" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Password API</label>
+                            <input type="password" class="form-control" id="edit_password" name="password" placeholder="(Biarkan kosong jika tidak berubah)">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nama Address-List Isolir</label>
+                        <input type="text" class="form-control" id="edit_isolir_address_list" name="isolir_address_list">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Deskripsi / Lokasi</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_default" value="1" id="editDefaultSwitch">
+                        <label class="form-check-label fw-semibold" for="editDefaultSwitch">Jadikan sebagai Router Utama (Default)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function populateEditModal(routerData) {
+    if (!routerData) return;
+    document.getElementById('formEditRouter').action = '/mikrotik/routers/' + routerData.id + '/edit';
+    document.getElementById('edit_name').value = routerData.name || '';
+    document.getElementById('edit_host').value = routerData.host || '';
+    document.getElementById('edit_port').value = routerData.port || 8728;
+    document.getElementById('edit_username').value = routerData.username || '';
+    document.getElementById('edit_password').value = '';
+    document.getElementById('edit_isolir_address_list').value = routerData.isolir_address_list || 'Expired';
+    document.getElementById('edit_description').value = routerData.description || '';
+    document.getElementById('editDefaultSwitch').checked = routerData.is_default === 1;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Tombol Uji Koneksi Router via AJAX
+    $(document).on('click', '.btn-test-router', function(e) {
+        e.preventDefault();
+        const routerId = $(this).data('id');
+        const routerName = $(this).data('name') || 'Router';
+        const btn = $(this);
+        const originalHtml = btn.html();
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Uji...');
+
+        Swal.fire({
+            title: `Menguji Koneksi...`,
+            text: `Sedang menghubungi ${routerName}, mohon tunggu...`,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        $.ajax({
+            url: `/mikrotik/routers/${routerId}/test`,
+            type: 'POST',
+            dataType: 'json',
+            success: function(res) {
+                btn.prop('disabled', false).html(originalHtml);
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Koneksi Berhasil!',
+                        text: res.message,
+                        timer: 4000
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Koneksi Gagal',
+                        text: res.message
+                    });
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html(originalHtml);
+                const msg = xhr.responseJSON?.message || 'Gagal menghubungi server';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan',
+                    text: msg
+                });
+            }
+        });
+    });
+});
+</script>
+
+<%- include('partials/footer') %>

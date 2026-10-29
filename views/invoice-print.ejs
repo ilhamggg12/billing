@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - <%= invoice.invoice_number %> | <%= companyName %></title>
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3.2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.5 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #ffffff;
+            border-bottom: 1px solid #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 12px 24px;
+        }
+
+        .invoice-wrapper {
+            padding: 24px 0 48px;
+        }
+
+        .invoice-paper {
+            max-width: 820px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+            padding: 40px;
+            position: relative;
+        }
+
+        .invoice-header {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .invoice-logo {
+            height: 76px;
+            max-height: 84px;
+            max-width: 180px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .company-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #1d4ed8;
+            margin-bottom: 4px;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+
+        .invoice-title {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #0f172a;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .badge-status-stamp {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .stamp-paid {
+            background-color: #dcfce7;
+            color: #15803d;
+            border: 2px solid #86efac;
+        }
+
+        .stamp-unpaid {
+            background-color: #fef3c7;
+            color: #b45309;
+            border: 2px solid #fde68a;
+        }
+
+        .stamp-overdue {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 2px solid #fca5a5;
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px 20px;
+            height: 100%;
+        }
+
+        .table-invoice th {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px 16px;
+            border: none;
+        }
+
+        .table-invoice td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table-invoice .total-row th {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-top: 2px solid #0f172a;
+            border-bottom: 2px solid #0f172a;
+        }
+
+        .signature-box {
+            text-align: center;
+            width: 220px;
+            margin-left: auto;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #94a3b8;
+            height: 65px;
+            margin-bottom: 8px;
+        }
+
+        @media print {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .invoice-wrapper {
+                padding: 0 !important;
+            }
+
+            .invoice-paper {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+
+            @page {
+                size: A4;
+                margin: 10mm 12mm;
+            }
+        }
+
+        <% if (typeof isPdf !== 'undefined' && isPdf) { %>
+        body {
+            background: #ffffff !important;
+            padding: 0 !important;
+        }
+        .invoice-wrapper {
+            padding: 0 !important;
+        }
+        .invoice-paper {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 8px 12px !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+        <% } %>
+    </style>
+</head>
+<body>
+
+    <% if (typeof isPdf === 'undefined' || !isPdf) { %>
+    <!-- Print Action Bar (Hidden when printing or in PDF) -->
+    <div class="print-toolbar no-print">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/billing/<%= invoice.id %>" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Kembali ke Detail
+                </a>
+                <span class="text-muted small">Pratinjau Cetak Invoice: <strong><%= invoice.invoice_number %></strong></span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary btn-sm px-3" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i>Cetak Sekarang (Print / PDF)
+                </button>
+                <button type="button" class="btn btn-outline-dark btn-sm" onclick="window.close()">
+                    <i class="fas fa-times me-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Printable Paper Area -->
+    <div class="invoice-wrapper">
+        <div class="invoice-paper">
+            <!-- Header: Company & Invoice Info -->
+            <div class="invoice-header">
+                <div class="d-flex align-items-center gap-3">
+                    <img src="<%= (typeof companyLogo !== 'undefined' && companyLogo) ? companyLogo : '/img/logo.png' %>" alt="Logo Perusahaan" class="invoice-logo">
+                    <div>
+                        <div class="company-title"><%= companyName %></div>
+                        <% if (companyAddress) { %>
+                            <p class="text-secondary small mb-1" style="max-width: 340px; font-size: 0.78rem; line-height: 1.35;"><%= companyAddress %></p>
+                        <% } %>
+                        <% if (companyPhone) { %>
+                            <p class="text-secondary small mb-0 fw-semibold" style="font-size: 0.78rem;"><i class="fas fa-phone me-1"></i><%= companyPhone %></p>
+                        <% } %>
+                    </div>
+                </div>
+                <div class="text-end flex-shrink-0 ms-2">
+                    <div class="invoice-title">INVOICE</div>
+                    <div class="fw-bold text-secondary mt-1" style="font-size: 0.92rem; white-space: nowrap;"><%= invoice.invoice_number %></div>
+                    <div class="mt-2">
+                        <% if (invoice.status === 'paid') { %>
+                            <span class="badge-status-stamp stamp-paid"><i class="fas fa-check-circle"></i><span>LUNAS</span></span>
+                        <% } else if (invoice.status === 'overdue') { %>
+                            <span class="badge-status-stamp stamp-overdue"><i class="fas fa-exclamation-circle"></i><span>JATUH TEMPO</span></span>
+                        <% } else { %>
+                            <span class="badge-status-stamp stamp-unpaid"><i class="fas fa-clock"></i><span>BELUM LUNAS</span></span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer & Billing Details -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <div class="info-card">
+                        <small class="text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.72rem; letter-spacing: 0.5px;">Ditujukan Kepada:</small>
+                        <h6 class="fw-bold text-dark mb-1"><%= invoice.customer_name %></h6>
+                        <div class="small text-secondary mb-1">ID Pelanggan: <strong><%= invoice.customer_code || invoice.customer_id %></strong></div>
+                        <% if (invoice.customer_phone) { %>
+                            <div class="small text-secondary mb-1"><i class="fas fa-phone me-1"></i><%= invoice.customer_phone %></div>
+                        <% } %>
+                        <% if (invoice.customer_address) { %>
+                            <div class="small text-secondary"><i class="fas fa-map-marker-alt me-1"></i><%= invoice.customer_address %></div>
+                        <% } %>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="info-card">
+                        <small class="text-muted fw-bold text-uppercase d-block mb-2" style="font-size: 0.72rem; letter-spacing: 0.5px;">Informasi Faktur:</small>
+                        <table class="w-100" style="font-size: 0.84rem;">
+                            <tr>
+                                <td class="text-secondary py-1 text-nowrap pe-2" width="102">Periode:</td>
+                                <td class="fw-bold py-1 text-dark"><%= invoice.period %></td>
+                            </tr>
+                            <tr>
+                                <td class="text-secondary py-1 text-nowrap pe-2">Tgl Tagihan:</td>
+                                <td class="py-1 text-dark text-nowrap"><%= moment(invoice.created_at).format('DD MMMM YYYY') %></td>
+                            </tr>
+                            <tr>
+                                <td class="text-secondary py-1 text-nowrap pe-2">Jatuh Tempo:</td>
+                                <td class="fw-bold py-1 text-danger text-nowrap"><%= moment(invoice.due_date).format('DD MMMM YYYY') %> (23:59 WIB)</td>
+                            </tr>
+                            <% if (invoice.paid_date) { %>
+                            <tr>
+                                <td class="text-secondary py-1 text-nowrap pe-2">Tgl Lunas:</td>
+                                <td class="fw-bold py-1 text-success text-nowrap"><%= moment(invoice.paid_date).format('DD MMMM YYYY') %></td>
+                            </tr>
+                            <% } %>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="mb-4">
+                <table class="table table-invoice mb-0">
+                    <thead>
+                        <tr>
+                            <th width="45" class="text-center">No</th>
+                            <th width="46%">Deskripsi Layanan</th>
+                            <th width="29%">Paket Internet</th>
+                            <th class="text-end text-nowrap" width="20%">Jumlah (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td style="font-size: 0.9rem;">
+                                <strong>Langganan Internet Periode <span class="text-nowrap"><%= invoice.period %></span></strong>
+                            </td>
+                            <td style="font-size: 0.9rem;">
+                                <span class="fw-semibold"><%= invoice.package_name || '-' %></span>
+                                <% if (invoice.speed_down) { %>
+                                    <small class="text-muted d-block">Kecepatan: <%= invoice.speed_down %> Mbps</small>
+                                <% } %>
+                            </td>
+                            <td class="text-end fw-bold text-nowrap" style="font-size: 0.95rem;">Rp <%= Number(invoice.amount).toLocaleString('id-ID') %></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <th colspan="3" class="text-end">TOTAL TAGIHAN:</th>
+                            <th class="text-end text-primary text-nowrap" style="text-transform: none !important;">Rp <%= Number(invoice.amount).toLocaleString('id-ID') %></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Payment Methods & Signature -->
+            <div class="row g-3 mb-4 align-items-end">
+                <div class="col-7">
+                    <% 
+                        const hasPaymentInfo = (typeof paymentSettings !== 'undefined') && (
+                            paymentSettings.payment_bank_info || 
+                            paymentSettings.payment_ewallet_info || 
+                            paymentSettings.payment_qris_image ||
+                            paymentSettings.payment_qris_info
+                        );
+                    %>
+                    <% if (hasPaymentInfo) { %>
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="fw-bold text-dark small mb-2 border-bottom pb-1 d-flex align-items-center">
+                            <i class="fas fa-wallet text-primary me-2"></i>Metode Pembayaran:
+                        </div>
+                        <div class="row g-2 align-items-center">
+                            <div class="<%= paymentSettings.payment_qris_image ? 'col-8' : 'col-12' %>">
+                                <% if (paymentSettings.payment_bank_info) { %>
+                                <div class="mb-2">
+                                    <span class="fw-bold text-dark d-block" style="font-size: 0.76rem;">1. Bank Transfer:</span>
+                                    <div class="text-secondary small font-monospace ps-2" style="font-size: 0.74rem; white-space: pre-line; line-height: 1.3;"><%= paymentSettings.payment_bank_info %></div>
+                                </div>
+                                <% } %>
+
+                                <% if (paymentSettings.payment_ewallet_info) { %>
+                                <div class="mb-0">
+                                    <span class="fw-bold text-dark d-block" style="font-size: 0.76rem;">2. e-Wallet (DANA):</span>
+                                    <div class="text-secondary small font-monospace ps-2" style="font-size: 0.74rem; white-space: pre-line; line-height: 1.3;"><%= paymentSettings.payment_ewallet_info %></div>
+                                </div>
+                                <% } %>
+
+                                <% if (!paymentSettings.payment_qris_image && paymentSettings.payment_qris_info) { %>
+                                <div class="mt-2 mb-0">
+                                    <span class="fw-bold text-dark d-block" style="font-size: 0.76rem;">3. QRIS:</span>
+                                    <div class="text-secondary small ps-2" style="font-size: 0.74rem;"><%= paymentSettings.payment_qris_info %></div>
+                                </div>
+                                <% } %>
+                            </div>
+
+                            <% if (paymentSettings.payment_qris_image) { %>
+                            <div class="col-4 text-center border-start ps-2 d-flex flex-column align-items-center justify-content-center">
+                                <span class="fw-bold text-dark d-block mb-1" style="font-size: 0.75rem;">3. QRIS</span>
+                                <img src="<%= paymentSettings.payment_qris_image %>" alt="QRIS" class="img-fluid rounded border bg-white p-1" style="max-height: 95px; max-width: 95px; object-fit: contain;">
+                                <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">Scan untuk Bayar</small>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <% if (invoice.notes) { %>
+                        <div class="p-2 mt-2 bg-light rounded border small text-muted" style="font-size: 0.75rem;">
+                            <strong>Catatan:</strong> <%= invoice.notes %>
+                        </div>
+                    <% } %>
+                </div>
+                <div class="col-5">
+                    <div class="signature-box">
+                        <div class="small text-secondary mb-1">Hormat Kami,</div>
+                        <div class="small fw-bold text-dark"><%= companyName %></div>
+                        <div class="signature-line"></div>
+                        <div class="small text-muted">( Petugas / Kasir )</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Note -->
+            <div class="text-center pt-3 border-top text-muted small" style="font-size: 0.78rem;">
+                Terima kasih atas kerja sama dan kepercayaan Anda menggunakan layanan internet <strong><%= companyName %></strong>.
+                <br><em>Invoice ini merupakan bukti resmi penagihan dan pembayaran yang sah.</em>
+            </div>
+        </div>
+    </div>
+
+    <% if (typeof isPdf === 'undefined' || !isPdf) { %>
+    <!-- Auto Print Script -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            // Berikan waktu render CSS sebelum membuka dialog cetak
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+    <% } %>
+</body>
+</html>

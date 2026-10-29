@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><%= title %> | LJN Billing</title>
+    <!-- Favicon / Logo Tab Browser -->
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png">
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3.2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.5 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <!-- DataTables Bootstrap 5 CSS -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <% if (typeof activePage !== 'undefined' && activePage === 'map') { %>
+    <!-- Leaflet CSS -->
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+    <!-- Leaflet MarkerCluster CSS -->
+    <link href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" rel="stylesheet">
+    <% } %>
+    <!-- Custom CSS with Cache Buster -->
+    <link href="/css/style.css?v=2.6" rel="stylesheet">
+    <style>
+        /* Standalone fallback styles to guarantee sidebar toggle works regardless of browser CSS cache */
+        .sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .content-wrapper {
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        @media (min-width: 992px) {
+            body.sidebar-collapsed .sidebar,
+            #sidebar.collapsed,
+            .wrapper.sidebar-toggled #sidebar {
+                transform: translateX(-100%) !important;
+                box-shadow: none !important;
+            }
+            body.sidebar-collapsed .content-wrapper,
+            .content-wrapper.expanded,
+            .wrapper.sidebar-toggled .content-wrapper {
+                margin-left: 0 !important;
+            }
+        }
+        @media (max-width: 991.98px) {
+            #sidebar {
+                transform: translateX(-100%);
+            }
+            #sidebar.show,
+            body.sidebar-mobile-open #sidebar {
+                transform: translateX(0) !important;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4) !important;
+            }
+            .content-wrapper {
+                margin-left: 0 !important;
+            }
+            #sidebarOverlay.show,
+            body.sidebar-mobile-open #sidebarOverlay {
+                display: block !important;
+                opacity: 1 !important;
+            }
+        }
+
+        /* Styling Submenu Dropdown di dalam Sidebar */
+        .sidebar-nav .nav-link.has-submenu {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sidebar-nav .nav-link.parent-active {
+            color: #ffffff;
+            background: rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            font-weight: 700;
+        }
+        .submenu-arrow {
+            font-size: 0.75rem;
+            transition: transform 0.25s ease;
+            opacity: 0.8;
+        }
+        .nav-link.submenu-open .submenu-arrow {
+            transform: rotate(180deg);
+        }
+        .sidebar-submenu {
+            list-style: none;
+            padding: 4px 0 4px 12px;
+            margin: 4px 0 8px 24px;
+            border-left: 2px solid rgba(99, 102, 241, 0.35);
+            display: none;
+        }
+        .sidebar-submenu.show {
+            display: block;
+        }
+        .sidebar-submenu .submenu-item {
+            margin-bottom: 4px;
+        }
+        .sidebar-submenu .submenu-item:last-child {
+            margin-bottom: 0;
+        }
+        .sidebar-submenu .submenu-link {
+            display: flex;
+            align-items: center;
+            padding: 9px 12px;
+            color: #94a3b8;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .sidebar-submenu .submenu-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(2px);
+        }
+        .sidebar-submenu .submenu-link.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            font-weight: 700;
+        }
+        .sidebar-submenu .submenu-icon {
+            width: 18px;
+            font-size: 0.88rem;
+            margin-right: 10px;
+            text-align: center;
+            opacity: 0.9;
+        }
+    </style>
+    <script>
+        function toggleSidebarSubmenu(triggerEl, submenuId) {
+            var submenu = document.getElementById(submenuId);
+            if (!submenu) return;
+            var isOpen = submenu.classList.contains('show');
+            if (isOpen) {
+                submenu.classList.remove('show');
+                if (triggerEl) triggerEl.classList.remove('submenu-open');
+            } else {
+                submenu.classList.add('show');
+                if (triggerEl) triggerEl.classList.add('submenu-open');
+            }
+        }
+
+        function toggleSidebar(e) {
+            if (e) {
+                if (e.preventDefault) e.preventDefault();
+                if (e.stopPropagation) e.stopPropagation();
+            }
+            var isMobile = window.innerWidth < 992;
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var wrapper = document.querySelector('.wrapper');
+            var contentWrapper = document.querySelector('.content-wrapper');
+
+            if (isMobile) {
+                if (sidebar) sidebar.classList.toggle('show');
+                if (overlay) overlay.classList.toggle('show');
+                document.body.classList.toggle('sidebar-mobile-open');
+            } else {
+                document.body.classList.toggle('sidebar-collapsed');
+                if (sidebar) sidebar.classList.toggle('collapsed');
+                if (wrapper) wrapper.classList.toggle('sidebar-toggled');
+                if (contentWrapper) contentWrapper.classList.toggle('expanded');
+                try {
+                    var isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                    localStorage.setItem('sidebar-collapsed', isCollapsed ? 'true' : 'false');
+                } catch (err) {}
+            }
+
+            setTimeout(function() {
+                if (window.jQuery && jQuery.fn && jQuery.fn.dataTable) {
+                    jQuery.fn.dataTable.tables({ visible: true, api: true }).columns.adjust().responsive.recalc();
+                }
+            }, 320);
+        }
+
+        try {
+            if (window.innerWidth >= 992 && localStorage.getItem('sidebar-collapsed') === 'true') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.body.classList.add('sidebar-collapsed');
+                    var sidebar = document.getElementById('sidebar');
+                    var wrapper = document.querySelector('.wrapper');
+                    var contentWrapper = document.querySelector('.content-wrapper');
+                    if (sidebar) sidebar.classList.add('collapsed');
+                    if (wrapper) wrapper.classList.add('sidebar-toggled');
+                    if (contentWrapper) contentWrapper.classList.add('expanded');
+                });
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(event)"></div>
+
+        <%
+            const isTechUser = (typeof user !== 'undefined' && user && (user.role === 'technician' || user.role === 'teknisi'));
+            const isCustomerUser = (typeof user !== 'undefined' && user && (user.role === 'customer' || user.role === 'pelanggan'));
+        %>
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand py-3 px-3">
+                <a href="<%= isCustomerUser ? '/portal' : (isTechUser ? '/tickets' : '/dashboard') %>" class="d-flex align-items-center text-decoration-none">
+                    <img src="/img/logo.png" alt="Logo LJN" class="brand-logo-img me-2" style="height: 40px; width: auto; max-width: 46px; object-fit: contain; background: #ffffff; border-radius: 8px; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
+                    <div class="d-flex flex-column text-start">
+                        <span class="brand-text fw-bold text-white lh-1" style="font-size: 1.05rem; letter-spacing: -0.02em;">
+                            <%= isCustomerUser ? 'Portal Pelanggan' : (isTechUser ? 'Portal Teknisi' : 'LJN Billing') %>
+                        </span>
+                        <small class="text-white-50" style="font-size: 0.68rem; font-weight: 500;">
+                            <%= isCustomerUser ? 'Layanan Pengaduan' : (isTechUser ? 'Penanganan Gangguan' : 'Solokanjeruk') %>
+                        </small>
+                    </div>
+                </a>
+            </div>
+
+            <hr class="sidebar-divider">
+
+            <ul class="sidebar-nav">
+                <% if (isCustomerUser) { %>
+                    <!-- Menu Khusus Portal Pelanggan: Tagihan, Riwayat Pembayaran, Scoring & Tiket Gangguan -->
+                    <li class="nav-section-title">Menu Pelanggan</li>
+                    <li class="nav-item">
+                        <a href="/portal" class="nav-link <%= activePage === 'portal' ? 'active' : '' %>">
+                            <i class="fas fa-home nav-icon"></i>
+                            <span class="nav-text">Dashboard & Scoring</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/portal#section-billing" class="nav-link" onclick="if (typeof showPortalSection === 'function') { showPortalSection('billing'); }">
+                            <i class="fas fa-file-invoice-dollar nav-icon"></i>
+                            <span class="nav-text">Tagihan & Pembayaran</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/portal#section-tickets" class="nav-link" onclick="if (typeof showPortalSection === 'function') { showPortalSection('tickets'); }">
+                            <i class="fas fa-headset nav-icon"></i>
+                            <span class="nav-text">Tiket Gangguan Saya</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/portal#section-wifi" class="nav-link" onclick="if (typeof showPortalSection === 'function') { showPortalSection('wifi'); }">
+                            <i class="fas fa-wifi nav-icon"></i>
+                            <span class="nav-text">WiFi & Router</span>
+                        </a>
+                    </li>
+                <% } else if (isTechUser) { %>
+                    <!-- Menu Khusus Portal Teknisi: 1 Menu Induk dengan Sub-Menu di dalamnya -->
+                    <%
+                        const isTicketGroupActiveTech = (activePage === 'tickets' || activePage === 'psb' || activePage === 'technician_recap');
+                        const totalTechBadge = (typeof activeTicketCount !== 'undefined' ? activeTicketCount : 0) + (typeof activePsbCount !== 'undefined' ? activePsbCount : 0);
+                    %>
+                    <li class="nav-section-title">Menu Teknisi Lapangan</li>
+                    <li class="nav-item">
+                        <a href="javascript:void(0)"
+                           class="nav-link has-submenu <%= isTicketGroupActiveTech ? 'parent-active submenu-open' : 'submenu-open' %>"
+                           onclick="toggleSidebarSubmenu(this, 'techTicketSubmenu')">
+                            <i class="fas fa-headset nav-icon"></i>
+                            <span class="nav-text">Layanan & Tiket</span>
+                            <% if (totalTechBadge > 0) { %>
+                                <span class="badge bg-danger rounded-pill ms-auto me-2" style="font-size: 0.66rem;"><%= totalTechBadge %></span>
+                            <% } %>
+                            <i class="fas fa-chevron-down submenu-arrow <%= totalTechBadge > 0 ? '' : 'ms-auto' %>"></i>
+                        </a>
+                        <ul class="sidebar-submenu show" id="techTicketSubmenu">
+                            <li class="submenu-item">
+                                <a href="/tickets" class="submenu-link <%= activePage === 'tickets' ? 'active' : '' %>">
+                                    <i class="fas fa-tools submenu-icon"></i>
+                                    <span>Tiket Gangguan</span>
+                                    <% if (typeof activeTicketCount !== 'undefined' && activeTicketCount > 0) { %>
+                                    <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.65rem;"><%= activeTicketCount %></span>
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="/psb" class="submenu-link <%= activePage === 'psb' ? 'active' : '' %>">
+                                    <i class="fas fa-user-plus submenu-icon"></i>
+                                    <span>Tiket PSB</span>
+                                    <% if (typeof activePsbCount !== 'undefined' && activePsbCount > 0) { %>
+                                    <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.65rem;"><%= activePsbCount %></span>
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="/rekap-teknisi" class="submenu-link <%= activePage === 'technician_recap' ? 'active' : '' %>">
+                                    <i class="fas fa-clipboard-check submenu-icon"></i>
+                                    <span>Rekap Teknisi</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="/tickets#tab-archive" class="submenu-link" onclick="if (typeof switchTicketTab === 'function') { switchTicketTab('tab-archive-btn'); }">
+                                    <i class="fas fa-images submenu-icon"></i>
+                                    <span>Arsip Foto Lapangan</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                <% } else { %>
+                    <!-- Menu Lengkap Administrator -->
+                    <%
+                        const isTicketGroupActiveAdmin = (activePage === 'tickets' || activePage === 'psb' || activePage === 'technician_recap');
+                        const totalAdminTicketBadge = (typeof activeTicketCount !== 'undefined' ? activeTicketCount : 0) + (typeof activePsbCount !== 'undefined' ? activePsbCount : 0);
+                    %>
+                    <li class="nav-item">
+                        <a href="/dashboard" class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>">
+                            <i class="fas fa-tachometer-alt nav-icon"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/customers" class="nav-link <%= activePage === 'customers' ? 'active' : '' %>">
+                            <i class="fas fa-users nav-icon"></i>
+                            <span class="nav-text">Pelanggan</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/packages" class="nav-link <%= activePage === 'packages' ? 'active' : '' %>">
+                            <i class="fas fa-box nav-icon"></i>
+                            <span class="nav-text">Paket Internet</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/billing" class="nav-link <%= activePage === 'billing' ? 'active' : '' %>">
+                            <i class="fas fa-file-invoice-dollar nav-icon"></i>
+                            <span class="nav-text">Tagihan</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="javascript:void(0)"
+                           class="nav-link has-submenu <%= isTicketGroupActiveAdmin ? 'parent-active submenu-open' : '' %>"
+                           onclick="toggleSidebarSubmenu(this, 'adminTicketSubmenu')">
+                            <i class="fas fa-headset nav-icon"></i>
+                            <span class="nav-text">Tiket & Teknisi</span>
+                            <% if (totalAdminTicketBadge > 0) { %>
+                                <span class="badge bg-danger rounded-pill ms-auto me-2" style="font-size: 0.66rem;"><%= totalAdminTicketBadge %></span>
+                            <% } %>
+                            <i class="fas fa-chevron-down submenu-arrow <%= totalAdminTicketBadge > 0 ? '' : 'ms-auto' %>"></i>
+                        </a>
+                        <ul class="sidebar-submenu <%= isTicketGroupActiveAdmin ? 'show' : '' %>" id="adminTicketSubmenu">
+                            <li class="submenu-item">
+                                <a href="/tickets" class="submenu-link <%= activePage === 'tickets' ? 'active' : '' %>">
+                                    <i class="fas fa-tools submenu-icon"></i>
+                                    <span>Tiket Gangguan</span>
+                                    <% if (typeof activeTicketCount !== 'undefined' && activeTicketCount > 0) { %>
+                                    <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.65rem;"><%= activeTicketCount %></span>
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="/psb" class="submenu-link <%= activePage === 'psb' ? 'active' : '' %>">
+                                    <i class="fas fa-user-plus submenu-icon"></i>
+                                    <span>Tiket PSB</span>
+                                    <% if (typeof activePsbCount !== 'undefined' && activePsbCount > 0) { %>
+                                    <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.65rem;"><%= activePsbCount %></span>
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="/rekap-teknisi" class="submenu-link <%= activePage === 'technician_recap' ? 'active' : '' %>">
+                                    <i class="fas fa-clipboard-check submenu-icon"></i>
+                                    <span>Rekap Teknisi</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/reports" class="nav-link <%= activePage === 'reports' ? 'active' : '' %>">
+                            <i class="fas fa-chart-line nav-icon"></i>
+                            <span class="nav-text">Laporan</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/map" class="nav-link <%= activePage === 'map' ? 'active' : '' %>">
+                            <i class="fas fa-map-marked-alt nav-icon"></i>
+                            <span class="nav-text">Peta Pelanggan</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-section-title">Integrasi</li>
+
+                    <li class="nav-item">
+                        <a href="/mikrotik" class="nav-link <%= activePage === 'mikrotik' ? 'active' : '' %>">
+                            <i class="fas fa-network-wired nav-icon"></i>
+                            <span class="nav-text">MikroTik</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/genieacs" class="nav-link <%= activePage === 'genieacs' ? 'active' : '' %>">
+                            <i class="fas fa-microchip nav-icon"></i>
+                            <span class="nav-text">GenieACS</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-section-title">Sistem</li>
+
+                    <li class="nav-item">
+                        <a href="/settings" class="nav-link <%= activePage === 'settings' ? 'active' : '' %>">
+                            <i class="fas fa-cog nav-icon"></i>
+                            <span class="nav-text">Pengaturan</span>
+                        </a>
+                    </li>
+                <% } %>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-info" <%= (!isTechUser && !isCustomerUser) ? 'onclick="window.location.href=\'/settings#tab-admin-account\'" style="cursor: pointer;" title="Kelola Akun & Sandi Admin"' : '' %>>
+                    <div class="user-avatar">
+                        <i class="fas <%= isCustomerUser ? 'fa-user text-success' : (isTechUser ? 'fa-user-cog text-warning' : 'fa-user-circle') %>"></i>
+                    </div>
+                    <div class="user-details">
+                        <% if (typeof user !== 'undefined' && user) { %>
+                            <span class="user-name"><%= user.name || user.username %></span>
+                            <span class="user-role"><%= isCustomerUser ? (user.customer_code || 'Pelanggan') : (isTechUser ? (user.job_title || 'Teknisi Lapangan') : (user.role || 'Admin')) %></span>
+                        <% } %>
+                    </div>
+                </div>
+                <a href="/auth/logout" class="btn-logout" title="Keluar">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <!-- Top Navbar -->
+            <nav class="top-navbar">
+                <div class="d-flex align-items-center">
+                    <button class="btn sidebar-toggle" id="sidebarToggle" type="button" onclick="toggleSidebar(event)" title="Buka / Tutup Sidebar" aria-label="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="page-title"><%= title %></h1>
+                    <% if (isTechUser) { %>
+                        <span class="badge bg-warning text-dark ms-2 d-none d-sm-inline-block"><i class="fas fa-tools me-1"></i>Portal Teknisi</span>
+                    <% } else if (isCustomerUser) { %>
+                        <span class="badge bg-success ms-2 d-none d-sm-inline-block"><i class="fas fa-headset me-1"></i>Portal Pelanggan</span>
+                    <% } %>
+                </div>
+                <div class="navbar-actions d-flex align-items-center gap-3">
+                    <span class="text-muted small d-none d-md-inline-flex align-items-center bg-light px-3 py-1 rounded-pill border">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        <span id="currentTime" class="fw-semibold text-secondary"></span>
+                    </span>
+                    <% if (typeof user !== 'undefined' && user) { %>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas <%= isCustomerUser ? 'fa-user text-success' : (isTechUser ? 'fa-user-cog text-warning' : 'fa-user-circle text-primary') %> fa-lg"></i>
+                            <span class="fw-bold small d-none d-sm-inline text-dark"><%= user.name || user.username %></span>
+                            <i class="fas fa-chevron-down text-muted" style="font-size: 0.65rem;"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2 rounded-3" style="font-size: 0.88rem;">
+                            <li class="px-3 py-2 border-bottom bg-light rounded-top-3">
+                                <div class="fw-bold text-dark"><%= user.name || user.username %></div>
+                                <small class="text-muted text-uppercase" style="font-size: 0.7rem;"><%= isCustomerUser ? `Pelanggan (${user.customer_code || '-'})` : (isTechUser ? (user.job_title || 'Teknisi Lapangan') : (user.role || 'Administrator')) %></small>
+                            </li>
+                            <% if (!isTechUser && !isCustomerUser) { %>
+                            <li><a class="dropdown-item py-2" href="/settings"><i class="fas fa-cog me-2 text-muted"></i>Pengaturan</a></li>
+                            <li><a class="dropdown-item py-2 text-primary" href="/settings#tab-admin-account"><i class="fas fa-user-shield me-2"></i>Akun & Sandi Admin</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <% } %>
+                            <li><a class="dropdown-item py-2 text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt me-2"></i>Keluar</a></li>
+                        </ul>
+                    </div>
+                    <% } %>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="content-container">

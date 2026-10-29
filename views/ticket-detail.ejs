@@ -1,0 +1,672 @@
+<%- include('partials/header', { title: `Detail Tiket ${ticket.ticket_number}`, activePage: 'tickets' }) %>
+<% const isTechUser = (typeof user !== 'undefined' && user && (user.role === 'technician' || user.role === 'teknisi')); %>
+
+<!-- Header & Navigasi -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div class="d-flex align-items-center gap-2">
+        <a href="/tickets" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+        <div>
+            <h4 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                <span><%= ticket.ticket_number %></span>
+                <% if (ticket.status === 'open') { %>
+                    <span class="badge bg-danger fs-6">1. BARU / MENUNGGU</span>
+                <% } else if (ticket.status === 'accepted') { %>
+                    <span class="badge bg-info text-dark fs-6">2. DITERIMA TEKNISI</span>
+                <% } else if (ticket.status === 'in_progress') { %>
+                    <span class="badge bg-warning text-dark fs-6">3. SEDANG DITANGANI</span>
+                <% } else { %>
+                    <span class="badge bg-success fs-6">4. SELESAI (RESOLVED)</span>
+                <% } %>
+            </h4>
+            <small class="text-muted">Dilaporkan pada <%= moment(ticket.created_at).format('DD MMMM YYYY HH:mm') %> WIB oleh <%= ticket.created_by || 'Admin' %></small>
+        </div>
+    </div>
+
+    <!-- Tombol Aksi Utama -->
+    <div class="d-flex flex-wrap gap-2">
+        <% if (ticket.status === 'open') { %>
+            <button type="button" class="btn btn-info text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDetailAccept">
+                <i class="fas fa-user-check me-1"></i>Terima Tiket (WA Pelanggan)
+            </button>
+        <% } %>
+
+        <% if (ticket.status !== 'resolved') { %>
+            <button type="button" class="btn btn-warning text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDetailProgress">
+                <i class="fas fa-tools me-1"></i>Tambah Progress Pengerjaan (WA Pelanggan)
+            </button>
+            <button type="button" class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDetailResolve">
+                <i class="fas fa-check-double me-1"></i>Tandai Selesai (WA Pelanggan)
+            </button>
+        <% } %>
+    </div>
+</div>
+
+<!-- Stepper Tahapan Tiket -->
+<%
+    const stepOrder = { 'open': 1, 'accepted': 2, 'in_progress': 3, 'resolved': 4 };
+    const currentStep = stepOrder[ticket.status] || 1;
+%>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3 px-4">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+                <div class="p-2 rounded-3 border <%= currentStep >= 1 ? 'border-danger bg-danger bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 1 ? 'text-danger' : 'text-muted' %>">
+                        <i class="fas fa-bell me-1"></i>1. Laporan Masuk
+                    </div>
+                    <small class="text-muted d-block"><%= moment(ticket.created_at).format('DD/MM/YY HH:mm') %></small>
+                    <span class="badge <%= ticket.wa_tech_sent ? 'bg-success' : 'bg-secondary' %> mt-1" style="font-size: 0.68rem;">
+                        WA Teknisi: <%= ticket.wa_tech_sent ? 'Terkirim ✓' : 'Belum' %>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 rounded-3 border <%= currentStep >= 2 ? 'border-info bg-info bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 2 ? 'text-info' : 'text-muted' %>">
+                        <i class="fas fa-user-check me-1"></i>2. Diterima Teknisi
+                    </div>
+                    <small class="text-muted d-block"><%= ticket.accepted_at ? moment(ticket.accepted_at).format('DD/MM/YY HH:mm') : 'Menunggu' %></small>
+                    <span class="badge <%= ticket.wa_accepted_sent ? 'bg-success' : 'bg-secondary' %> mt-1" style="font-size: 0.68rem;">
+                        WA Pelanggan: <%= ticket.wa_accepted_sent ? 'Terkirim ✓' : 'Belum' %>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 rounded-3 border <%= currentStep >= 3 ? 'border-warning bg-warning bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 3 ? 'text-warning' : 'text-muted' %>">
+                        <i class="fas fa-tools me-1"></i>3. Sedang Ditangani
+                    </div>
+                    <small class="text-muted d-block"><%= ticket.in_progress_at ? moment(ticket.in_progress_at).format('DD/MM/YY HH:mm') : 'Menunggu' %></small>
+                    <span class="badge <%= ticket.wa_progress_sent ? 'bg-success' : 'bg-secondary' %> mt-1" style="font-size: 0.68rem;">
+                        WA Progress: <%= ticket.wa_progress_sent ? `${ticket.wa_progress_sent}x Terkirim ✓` : 'Belum' %>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-2 rounded-3 border <%= currentStep >= 4 ? 'border-success bg-success bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 4 ? 'text-success' : 'text-muted' %>">
+                        <i class="fas fa-check-circle me-1"></i>4. Selesai
+                    </div>
+                    <small class="text-muted d-block"><%= ticket.resolved_at ? moment(ticket.resolved_at).format('DD/MM/YY HH:mm') : 'Belum selesai' %></small>
+                    <span class="badge <%= ticket.wa_resolved_sent ? 'bg-success' : 'bg-secondary' %> mt-1" style="font-size: 0.68rem;">
+                        WA Selesai: <%= ticket.wa_resolved_sent ? 'Terkirim ✓' : 'Belum' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Kolom Kiri: Info Pelanggan, Teknisi & Kirim Ulang WA -->
+    <div class="col-lg-4">
+        <!-- Info Pelanggan & Layanan -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-user text-primary me-2"></i>Informasi Pelanggan & Gangguan</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted d-block">Nama Pelanggan</small>
+                    <div class="fw-bold fs-6 text-dark"><%= ticket.customer_name %></div>
+                    <% if (ticket.customer_code) { %>
+                        <span class="badge bg-light text-secondary border"><%= ticket.customer_code %></span>
+                    <% } %>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Nomor WhatsApp Pelanggan</small>
+                    <div class="fw-semibold text-success">
+                        <i class="fab fa-whatsapp me-1"></i><%= ticket.customer_phone || '-' %>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Alamat Lokasi</small>
+                    <div class="small text-dark"><%= ticket.customer_address || '-' %></div>
+                    <% if (ticket.latitude && ticket.longitude) { %>
+                        <a href="https://www.google.com/maps?q=<%= ticket.latitude %>,<%= ticket.longitude %>" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="fas fa-map-marked-alt me-1"></i>Buka Titik Lokasi di Google Maps
+                        </a>
+                    <% } %>
+                </div>
+                <hr>
+                <div class="row g-2 small mb-3">
+                    <div class="col-6">
+                        <span class="text-muted d-block">Paket Internet:</span>
+                        <strong><%= ticket.package_name || '-' %></strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">PPPoE / IP:</span>
+                        <strong><%= ticket.pppoe_username || ticket.ip_address || '-' %></strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">SN ONT:</span>
+                        <strong><%= ticket.onu_serial || '-' %></strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block">Prioritas:</span>
+                        <strong class="text-uppercase"><%= ticket.priority %></strong>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Kategori Gangguan</small>
+                    <div class="fw-bold text-danger"><%= ticket.category %></div>
+                </div>
+                <div>
+                    <small class="text-muted d-block">Detail Keluhan Awal</small>
+                    <div class="p-2 bg-light rounded border small"><%= ticket.description || ticket.subject %></div>
+                </div>
+                <% if (ticket.resolution_notes) { %>
+                <div class="mt-3">
+                    <small class="text-success fw-bold d-block"><i class="fas fa-check-circle me-1"></i>Catatan Penyelesaian / Solusi</small>
+                    <div class="p-2 bg-success bg-opacity-10 border border-success rounded small text-dark"><%= ticket.resolution_notes %></div>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Teknisi & Kirim Ulang WA Manual -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fab fa-whatsapp text-success me-2"></i>Teknisi & Kirim Notifikasi WA</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted d-block">Teknisi Bertugas</small>
+                    <div class="fw-bold text-dark"><i class="fas fa-user-cog text-primary me-1"></i><%= ticket.technician_name || 'Tim Teknisi' %></div>
+                    <small class="text-muted"><%= ticket.technician_phone || '-' %></small>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <form action="/tickets/<%= ticket.id %>/resend-wa" method="POST">
+                        <input type="hidden" name="target_type" value="tech">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100 text-start">
+                            <i class="fab fa-whatsapp me-2"></i>1. Kirim WA Laporan ke Teknisi
+                        </button>
+                    </form>
+                    <form action="/tickets/<%= ticket.id %>/resend-wa" method="POST">
+                        <input type="hidden" name="target_type" value="accepted">
+                        <button type="submit" class="btn btn-sm btn-outline-info text-dark w-100 text-start">
+                            <i class="fab fa-whatsapp me-2"></i>2. Kirim WA Tiket Diterima ke Pelanggan
+                        </button>
+                    </form>
+                    <form action="/tickets/<%= ticket.id %>/resend-wa" method="POST">
+                        <input type="hidden" name="target_type" value="progress">
+                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark w-100 text-start">
+                            <i class="fab fa-whatsapp me-2"></i>3. Kirim WA Progress ke Pelanggan
+                        </button>
+                    </form>
+                    <form action="/tickets/<%= ticket.id %>/resend-wa" method="POST">
+                        <input type="hidden" name="target_type" value="resolved">
+                        <button type="submit" class="btn btn-sm btn-outline-success w-100 text-start">
+                            <i class="fab fa-whatsapp me-2"></i>4. Kirim WA Gangguan Selesai ke Pelanggan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Upload Arsip Foto Tambahan -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-camera text-primary me-2"></i>Tambah Foto ke Arsip Tiket</h6>
+            </div>
+            <div class="card-body">
+                <form action="/tickets/<%= ticket.id %>/upload-photos" method="POST" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Kategori / Tahapan Foto</label>
+                        <select name="stage" class="form-select form-select-sm">
+                            <option value="report">1. Foto Laporan Awal</option>
+                            <option value="accepted">2. Foto Penerimaan Tiket</option>
+                            <option value="in_progress" selected>3. Foto Proses Pengerjaan</option>
+                            <option value="resolved">4. Foto Bukti Selesai</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Pilih Foto Dokumentasi (Bisa Banyak)</label>
+                        <input type="file" name="photos" class="form-control form-control-sm" accept="image/*" multiple required onchange="previewDetailUpload(this, 'previewExtraPhotos')">
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" name="caption" class="form-control form-control-sm" placeholder="Keterangan foto (misal: Foto redaman OPM -18 dBm)">
+                    </div>
+                    <div id="previewExtraPhotos" class="d-flex flex-wrap gap-2 mb-2"></div>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-upload me-1"></i>Simpan ke Arsip Tiket
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom Kanan: Kolom Chat Komunikasi, Timeline Riwayat Progress & Galeri Arsip Foto -->
+    <div class="col-lg-8">
+        <!-- Kolom Chat / Catatan Komunikasi Pelanggan <-> Teknisi -->
+        <% const chatList = typeof chatMessages !== 'undefined' ? chatMessages : []; %>
+        <div class="card border-0 shadow-sm mb-4" id="chat-section">
+            <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-comments me-2"></i>Kolom Chat & Catatan Komunikasi dengan Pelanggan</h6>
+                    <small class="opacity-75">Pelanggan: <strong><%= ticket.customer_name %></strong> (<%= ticket.customer_phone || '-' %>)</small>
+                </div>
+                <span class="badge bg-white text-primary"><%= chatList.length %> Pesan</span>
+            </div>
+            <div class="card-body p-3" id="techChatBox" style="max-height: 340px; overflow-y: auto; background: #f8fafc;">
+                <% if (chatList.length === 0) { %>
+                    <div class="text-center text-muted py-4">
+                        <i class="far fa-comment-dots fa-2x mb-2 opacity-25"></i>
+                        <p class="small mb-0">Belum ada pesan chat/catatan dengan pelanggan. Kirim pesan di bawah untuk berkomunikasi ke Portal Pelanggan & WhatsApp.</p>
+                    </div>
+                <% } else { %>
+                    <% chatList.forEach(msg => { 
+                        const isCustomer = (msg.sender_role === 'customer');
+                    %>
+                    <div class="d-flex flex-column <%= isCustomer ? 'align-items-start' : 'align-items-end' %> mb-3">
+                        <div class="p-3 rounded-3 shadow-xs"
+                             style="max-width: 82%; <%= isCustomer ? 'background: #ffffff; border: 1px solid #cbd5e1; color: #1e293b;' : 'background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a;' %>">
+                            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
+                                <span class="fw-bold small <%= isCustomer ? 'text-success' : 'text-primary' %>">
+                                    <% if (isCustomer) { %>
+                                        <i class="fas fa-user me-1"></i><%= msg.sender_name %>
+                                        <span class="badge bg-success ms-1" style="font-size: 0.62rem;">PELANGGAN</span>
+                                    <% } else { %>
+                                        <i class="fas fa-user-cog me-1"></i><%= msg.sender_name %>
+                                        <span class="badge bg-primary ms-1" style="font-size: 0.62rem;">TEKNISI / ADMIN</span>
+                                    <% } %>
+                                </span>
+                                <small class="text-muted" style="font-size: 0.68rem;"><%= moment(msg.created_at).format('DD/MM HH:mm') %></small>
+                            </div>
+                            <div class="small" style="white-space: pre-line;"><%= msg.message %></div>
+                            <% if (msg.photo_path) { %>
+                                <div class="mt-2">
+                                    <img src="<%= msg.photo_path %>" alt="Lampiran Chat"
+                                         class="img-fluid rounded border"
+                                         style="max-height: 150px; cursor: pointer;"
+                                         onclick="previewDetailPhoto('<%= msg.photo_path %>', 'Lampiran Chat')">
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% }) %>
+                <% } %>
+            </div>
+            <div class="card-footer bg-white p-3 border-top">
+                <form action="/tickets/<%= ticket.id %>/chat" method="POST" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <textarea name="message" class="form-control form-control-sm" rows="2" placeholder="Tulis balasan / catatan untuk pelanggan (muncul di Portal Pelanggan & dikirim ke WA Pelanggan)..." required></textarea>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <label class="btn btn-sm btn-outline-secondary mb-0">
+                                <i class="fas fa-camera me-1"></i>Foto
+                                <input type="file" name="photo" accept="image/*" class="d-none" onchange="document.getElementById('techChatFile').textContent = this.files[0] ? this.files[0].name : ''">
+                            </label>
+                            <small id="techChatFile" class="text-muted text-truncate" style="max-width: 120px;"></small>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" name="send_wa_chat" id="sendWaChatSwitch" value="true" checked>
+                                <label class="form-check-label small fw-semibold" for="sendWaChatSwitch">
+                                    <i class="fab fa-whatsapp text-success me-1"></i>Kirim juga ke WA Pelanggan
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm fw-bold px-3">
+                            <i class="fas fa-paper-plane me-1"></i>Kirim Balasan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Timeline Progress Pengerjaan -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="fas fa-stream text-primary me-2"></i>Timeline Riwayat & Progress Penanganan</h6>
+                <span class="badge bg-primary rounded-pill"><%= logs.length %> Riwayat</span>
+            </div>
+            <div class="card-body">
+                <div class="position-relative ps-4 border-start border-2 border-primary ms-2">
+                    <% logs.forEach((log, idx) => { 
+                        const logPhotos = photosByLog[log.id] || [];
+                        let dotColor = 'bg-primary';
+                        if (log.status === 'open') dotColor = 'bg-danger';
+                        else if (log.status === 'accepted') dotColor = 'bg-info';
+                        else if (log.status === 'in_progress') dotColor = 'bg-warning';
+                        else if (log.status === 'resolved') dotColor = 'bg-success';
+                    %>
+                    <div class="mb-4 position-relative">
+                        <span class="position-absolute top-0 start-0 translate-middle rounded-circle <%= dotColor %> border border-2 border-white shadow-sm"
+                              style="width: 16px; height: 16px; margin-left: -25px; margin-top: 10px;"></span>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-1 gap-1">
+                                <span class="fw-bold text-dark"><%= log.title %></span>
+                                <small class="text-muted">
+                                    <i class="far fa-clock me-1"></i><%= moment(log.created_at).format('DD MMM YYYY HH:mm') %> WIB
+                                </small>
+                            </div>
+                            <p class="small text-secondary mb-2" style="white-space: pre-line;"><%= log.description %></p>
+
+                            <!-- Foto yang dilampirkan pada langkah ini -->
+                            <% if (logPhotos.length > 0) { %>
+                                <div class="d-flex flex-wrap gap-2 my-2">
+                                    <% logPhotos.forEach(ph => { %>
+                                        <div class="position-relative">
+                                            <img src="<%= ph.file_path %>" alt="<%= ph.caption %>"
+                                                 class="rounded border shadow-xs"
+                                                 style="width: 90px; height: 90px; object-fit: cover; cursor: pointer;"
+                                                 onclick="previewDetailPhoto('<%= ph.file_path %>', '<%= (ph.caption || log.title).replace(/'/g, '') %>')">
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            <% } %>
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center pt-2 border-top mt-1">
+                                <small class="text-muted" style="font-size: 0.74rem;">
+                                    <i class="fas fa-user-check me-1"></i>Petugas: <strong><%= log.actor_name || 'Admin' %></strong>
+                                </small>
+                                <% if (log.wa_sent) { %>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success" style="font-size: 0.7rem;">
+                                        <i class="fab fa-whatsapp me-1"></i>Notifikasi WA Terkirim <%= log.wa_target ? `(${log.wa_target})` : '' %>
+                                    </span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Galeri Arsip Foto Tiket Ini -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-images text-primary me-2"></i>Arsip Foto Lampiran Tiket (<%= photos.length %> Foto)</h6>
+                    <small class="text-muted">Dokumentasi foto dari pelaporan awal, pengerjaan teknisi, hingga selesai</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (photos.length === 0) { %>
+                    <div class="text-center py-4 text-muted">
+                        <i class="far fa-images fa-2x mb-2 opacity-50"></i>
+                        <p class="small mb-0">Belum ada foto yang dilampirkan pada tiket ini.</p>
+                    </div>
+                <% } else { %>
+                    <div class="row g-3">
+                        <% photos.forEach(ph => { 
+                            let badgeClass = 'bg-secondary';
+                            let stageLabel = 'Dokumentasi';
+                            if (ph.stage === 'report') { badgeClass = 'bg-danger'; stageLabel = '1. Laporan Awal'; }
+                            else if (ph.stage === 'accepted') { badgeClass = 'bg-info text-dark'; stageLabel = '2. Diterima Teknisi'; }
+                            else if (ph.stage === 'in_progress') { badgeClass = 'bg-warning text-dark'; stageLabel = '3. Proses Pengerjaan'; }
+                            else if (ph.stage === 'resolved') { badgeClass = 'bg-success'; stageLabel = '4. Bukti Selesai'; }
+                        %>
+                        <div class="col-sm-6 col-md-4">
+                            <div class="card h-100 border shadow-xs">
+                                <div class="position-relative" style="height: 165px; overflow: hidden; background: #f1f5f9;">
+                                    <img src="<%= ph.file_path %>" alt="<%= ph.caption %>"
+                                         class="w-100 h-100" style="object-fit: cover; cursor: pointer;"
+                                         onclick="previewDetailPhoto('<%= ph.file_path %>', '<%= (ph.caption || '').replace(/'/g, '') %>')">
+                                    <span class="badge <%= badgeClass %> position-absolute top-0 start-0 m-2 shadow-sm">
+                                        <%= stageLabel %>
+                                    </span>
+                                </div>
+                                <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <p class="small fw-semibold text-dark mb-1"><%= ph.caption || '-' %></p>
+                                        <small class="text-muted d-block" style="font-size: 0.7rem;">
+                                            <i class="far fa-clock me-1"></i><%= moment(ph.created_at).format('DD/MM/YYYY HH:mm') %> • <%= ph.uploaded_by || 'Teknisi' %>
+                                        </small>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                        <a href="<%= ph.file_path %>" download="<%= ph.file_name || 'foto-tiket.jpg' %>" class="btn btn-xs btn-outline-primary py-0 px-2 small">
+                                            <i class="fas fa-download me-1"></i>Unduh
+                                        </a>
+                                        <% if (!isTechUser) { %>
+                                        <form action="/tickets/photos/<%= ph.id %>/delete" method="POST" class="d-inline">
+                                            <input type="hidden" name="redirect_to" value="/tickets/<%= ticket.id %>">
+                                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2 small btn-delete" title="Hapus Foto">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL TERIMA TIKET -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalDetailAccept" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/tickets/<%= ticket.id %>/accept" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets/<%= ticket.id %>">
+                <div class="modal-header bg-info text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-check me-2"></i>Terima Tiket Gangguan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pilih Teknisi</label>
+                        <select name="technician_select" class="form-select mb-2" onchange="document.getElementById('detailAcceptCustom').classList.toggle('d-none', this.value !== 'custom')">
+                            <% technicians.forEach(tech => { %>
+                                <option value="<%= tech.id %>" <%= ticket.technician_id === tech.id ? 'selected' : '' %>><%= tech.name %> (<%= tech.phone %>)</option>
+                            <% }) %>
+                            <option value="custom" <%= technicians.length === 0 ? 'selected' : '' %>>Input Manual...</option>
+                        </select>
+                        <div id="detailAcceptCustom" class="row g-2 <%= technicians.length === 0 ? '' : 'd-none' %>">
+                            <div class="col-6">
+                                <input type="text" name="custom_tech_name" class="form-control form-control-sm" value="<%= ticket.technician_name || '' %>" placeholder="Nama Teknisi">
+                            </div>
+                            <div class="col-6">
+                                <input type="text" name="custom_tech_phone" class="form-control form-control-sm" value="<%= ticket.technician_phone || '' %>" placeholder="No. WA Teknisi">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Catatan Penerimaan ke Pelanggan</label>
+                        <textarea name="note" class="form-control" rows="3">Tiket gangguan Anda telah diterima oleh tim teknisi dan sedang dijadwalkan untuk segera ditangani.</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Lampirkan Foto (Opsional)</label>
+                        <input type="file" name="photos" class="form-control form-control-sm" accept="image/*" multiple>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="send_wa_customer" id="detailAcceptWa" value="true" checked>
+                        <label class="form-check-label fw-semibold" for="detailAcceptWa">
+                            <i class="fab fa-whatsapp text-success me-1"></i>Kirim Notifikasi WA ke Pelanggan (<%= ticket.customer_name %>)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info text-dark fw-bold">Terima Tiket & Kirim WA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL UPDATE PROGRESS PENGERJAAN -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalDetailProgress" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/tickets/<%= ticket.id %>/progress" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets/<%= ticket.id %>">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-tools me-2"></i>Update Progress Pengerjaan Tiket</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Judul Tahapan Progress</label>
+                            <input type="text" name="progress_title" class="form-control" value="Sedang Dalam Penanganan Teknisi" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nama Teknisi</label>
+                            <input type="text" name="technician_name" class="form-control" value="<%= ticket.technician_name || 'Tim Teknisi' %>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Deskripsi Progress Pengerjaan</label>
+                            <textarea name="note" class="form-control" rows="3" required>Teknisi sedang melakukan pengecekan jalur kabel dan perbaikan di lokasi.</textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold mb-1"><i class="fas fa-camera text-warning me-1"></i>Lampirkan Foto Pengerjaan (Arsip & WA)</label>
+                                <input type="file" name="photos" class="form-control mb-2" accept="image/*" multiple onchange="previewDetailUpload(this, 'previewDetailProg')">
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto pengerjaan">
+                                <div id="previewDetailProg" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex gap-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_wa_customer" id="detailProgWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="detailProgWa">Kirim WA Progress ke Pelanggan</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_photo_wa" id="detailProgPhotoWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="detailProgPhotoWa">Sertakan Foto ke WA Pelanggan</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">Simpan Progress & Kirim WA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL SELESAIKAN TIKET -->
+<!-- ====================================================================== -->
+<div class="modal fade" id="modalDetailResolve" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="/tickets/<%= ticket.id %>/resolve" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="redirect_to" value="/tickets/<%= ticket.id %>">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-check-double me-2"></i>Selesaikan Tiket Gangguan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Teknisi yang Menyelesaikan</label>
+                            <input type="text" name="technician_name" class="form-control" value="<%= ticket.technician_name || 'Tim Teknisi' %>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Tindakan Perbaikan / Solusi Penyelesaian</label>
+                            <textarea name="note" class="form-control" rows="3" required>Perbaikan jalur jaringan dan perangkat telah selesai dilakukan. Koneksi internet pelanggan sudah kembali normal.</textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded border">
+                                <label class="form-label fw-bold mb-1"><i class="fas fa-camera text-success me-1"></i>Lampirkan Foto Bukti Selesai (Arsip & WA)</label>
+                                <input type="file" name="photos" class="form-control mb-2" accept="image/*" multiple onchange="previewDetailUpload(this, 'previewDetailRes')">
+                                <input type="text" name="photo_caption" class="form-control form-control-sm" placeholder="Keterangan foto bukti selesai">
+                                <div id="previewDetailRes" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 d-flex gap-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_wa_customer" id="detailResWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="detailResWa">Kirim WA Gangguan Selesai ke Pelanggan</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="send_photo_wa" id="detailResPhotoWa" value="true" checked>
+                                <label class="form-check-label fw-semibold" for="detailResPhotoWa">Sertakan Foto Bukti Selesai ke WA Pelanggan</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success fw-bold">Tandai Selesai & Kirim WA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div class="modal fade" id="modalDetailPhoto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+            <div class="modal-header border-secondary py-2">
+                <h6 class="modal-title fw-bold" id="detailPhotoTitle">Pratinjau Foto Dokumentasi</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-2" style="background: #0f172a;">
+                <img src="" id="detailPhotoImg" alt="Preview" class="img-fluid rounded" style="max-height: 75vh; object-fit: contain;">
+            </div>
+            <div class="modal-footer border-secondary py-2 justify-content-between">
+                <a href="#" id="detailPhotoDownload" download class="btn btn-sm btn-primary">
+                    <i class="fas fa-download me-1"></i>Unduh Foto
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewDetailUpload(input, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        if (!input.files) return;
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'rounded border shadow-xs';
+                img.style.width = '68px';
+                img.style.height = '68px';
+                img.style.objectFit = 'cover';
+                container.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function previewDetailPhoto(filePath, title) {
+        document.getElementById('detailPhotoImg').src = filePath;
+        document.getElementById('detailPhotoTitle').textContent = title || 'Foto Arsip Tiket';
+        document.getElementById('detailPhotoDownload').href = filePath;
+        new bootstrap.Modal(document.getElementById('modalDetailPhoto')).show();
+    }
+
+    const techChatEl = document.getElementById('techChatBox');
+    if (techChatEl) {
+        techChatEl.scrollTop = techChatEl.scrollHeight;
+    }
+
+    let currentTechChatCount = <%= typeof chatMessages !== 'undefined' ? chatMessages.length : 0 %>;
+    setInterval(async () => {
+        try {
+            const res = await fetch('/tickets/<%= ticket.id %>/messages');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.messages && data.messages.length > currentTechChatCount) {
+                window.location.reload();
+            }
+        } catch (e) {}
+    }, 6000);
+</script>
+
+<%- include('partials/footer') %>

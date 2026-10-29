@@ -1,0 +1,471 @@
+<%- include('partials/header', { title: mode === 'edit' ? 'Edit Pelanggan' : 'Tambah Pelanggan', activePage: 'customers' }) %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><%= mode === 'edit' ? 'Edit Pelanggan' : 'Tambah Pelanggan' %></h4>
+        <p class="text-muted mb-0">
+            <a href="/customers" class="text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Kembali ke daftar pelanggan</a>
+        </p>
+    </div>
+</div>
+
+<form action="<%= mode === 'edit' ? '/customers/' + customer.id : '/customers' %>" method="POST" id="customerForm">
+    <div class="row g-3">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Data Pelanggan -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="card-title fw-bold mb-0">
+                        <i class="fas fa-user text-primary me-2"></i>Data Pelanggan
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label for="name" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   value="<%= mode === 'edit' ? customer.name : '' %>" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="address" class="form-label">Alamat <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="address" name="address" rows="2" required><%= mode === 'edit' ? customer.address : '' %></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Telepon</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   value="<%= mode === 'edit' ? (customer.phone || '') : '' %>" placeholder="08xxxxxxxxxx">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="<%= mode === 'edit' ? (customer.email || '') : '' %>">
+                        </div>
+                        <div class="col-md-12">
+                            <label for="notes" class="form-label">Catatan</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"><%= mode === 'edit' ? (customer.notes || '') : '' %></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layanan Internet -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="card-title fw-bold mb-0">
+                        <i class="fas fa-wifi text-success me-2"></i>Layanan Internet
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label for="package_id" class="form-label">Paket Internet <span class="text-danger">*</span></label>
+                            <select class="form-select" id="package_id" name="package_id" required>
+                                <option value="">-- Pilih Paket --</option>
+                                <% if (packages && packages.length > 0) { %>
+                                    <% packages.forEach(function(pkg) { %>
+                                    <option value="<%= pkg.id %>" <%= (mode === 'edit' && customer.package_id == pkg.id) ? 'selected' : '' %>>
+                                        <%= pkg.name %> (<%= pkg.speed_down %> Mbps) - <%= pkg.is_bypass === 1 ? 'GRATIS / BYPASS (Bebas Tagihan & Isolir)' : 'Rp ' + Number(pkg.price).toLocaleString('id-ID') %>
+                                    </option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="router_id" class="form-label fw-bold"><i class="fas fa-server text-primary me-1"></i>Router MikroTik</label>
+                            <select class="form-select" id="router_id" name="router_id">
+                                <% if (typeof routers !== 'undefined' && routers.length > 0) { %>
+                                    <% routers.forEach(function(r) { %>
+                                    <option value="<%= r.id %>" <%= (mode === 'edit' && customer.router_id == r.id) || (mode === 'create' && r.is_default === 1) ? 'selected' : '' %>>
+                                        <%= r.name %> (<%= r.host %>:<%= r.port %>) <%= r.is_default === 1 ? '★' : '' %>
+                                    </option>
+                                    <% }); %>
+                                <% } else { %>
+                                    <option value="1">MikroTik Utama</option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="active" <%= (mode === 'edit' && customer.status === 'active') ? 'selected' : '' %>>Aktif</option>
+                                <option value="suspended" <%= (mode === 'edit' && customer.status === 'suspended') ? 'selected' : '' %>>Suspend</option>
+                                <option value="terminated" <%= (mode === 'edit' && customer.status === 'terminated') ? 'selected' : '' %>>Terminasi</option>
+                            </select>
+                        </div>
+
+                        <!-- Tipe Koneksi: PPPoE vs IP Statik -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Jenis Koneksi</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="connPppoe" value="pppoe" <%= (mode === 'create' || !customer.connection_type || customer.connection_type === 'pppoe') ? 'checked' : '' %>>
+                                    <label class="form-check-label fw-semibold" for="connPppoe">
+                                        <i class="fas fa-lock text-primary me-1"></i> PPPoE Client
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="connection_type" id="connStatic" value="static" <%= (mode === 'edit' && customer.connection_type === 'static') ? 'checked' : '' %>>
+                                    <label class="form-check-label fw-semibold" for="connStatic">
+                                        <i class="fas fa-network-wired text-info me-1"></i> IP Statik (Simple Queue)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bagian Khusus PPPoE -->
+                        <div id="pppoeSection" class="col-12 row g-3 m-0 p-0">
+                            <div class="col-md-4">
+                                <label for="pppoe_username" class="form-label">PPPoE Username</label>
+                                <input type="text" class="form-control" id="pppoe_username" name="pppoe_username"
+                                       placeholder="contoh: user01@isp"
+                                       value="<%= mode === 'edit' ? (customer.pppoe_username || '') : '' %>">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pppoe_password" class="form-label">PPPoE Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="pppoe_password" name="pppoe_password"
+                                           value="<%= mode === 'edit' ? (customer.pppoe_password || '') : '' %>">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePppoePass">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pppoe_ip_address" class="form-label">IP Pelanggan (Opsional)</label>
+                                <input type="text" class="form-control" id="pppoe_ip_address" name="pppoe_ip_address"
+                                       placeholder="contoh: 172.22.0.2"
+                                       value="<%= mode === 'edit' ? (customer.ip_address || '') : '' %>">
+                                <div class="form-text">Otomatis dideteksi dari MikroTik jika dikosongkan.</div>
+                            </div>
+                        </div>
+
+                        <!-- Bagian Khusus IP Statik -->
+                        <div id="staticSection" class="col-12 row g-3 m-0 p-0" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="ip_address" class="form-label">Alamat IP Pelanggan</label>
+                                <input type="text" class="form-control" id="ip_address" name="ip_address"
+                                       placeholder="contoh: 192.168.10.50 atau 10.10.1.15/24"
+                                       value="<%= mode === 'edit' ? (customer.ip_address || '') : '' %>">
+                                <div class="form-text">IP target untuk Simple Queue bandwidth limit di MikroTik.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="mac_address" class="form-label">MAC Address (Opsional)</label>
+                                <input type="text" class="form-control" id="mac_address" name="mac_address"
+                                       placeholder="contoh: 00:1A:2B:3C:4D:5E"
+                                       value="<%= mode === 'edit' ? (customer.mac_address || '') : '' %>">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="gateway_ip" class="form-label">IP Gateway Router Pelanggan (Opsional)</label>
+                                <input type="text" class="form-control" id="gateway_ip" name="gateway_ip"
+                                       placeholder="contoh: 192.168.10.1"
+                                       value="<%= mode === 'edit' ? (customer.gateway_ip || '') : '' %>">
+                                <div class="form-text">Tautan login router yang tampil di Portal Pelanggan. Jika kosong, memakai Alamat IP Pelanggan.</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="installation_date" class="form-label">Tanggal Instalasi</label>
+                            <input type="date" class="form-control" id="installation_date" name="installation_date"
+                                   value="<%= mode === 'edit' ? (customer.installation_date ? customer.installation_date.toString().split('T')[0] : '') : '' %>">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="due_date" class="form-label">Tanggal Jatuh Tempo (Tagihan)</label>
+                            <select class="form-select" id="due_date" name="due_date">
+                                <% for (let d = 1; d <= 28; d++) { %>
+                                <option value="<%= d %>" <%= (mode === 'edit' && customer.due_date == d) || (mode === 'create' && d === 8) ? 'selected' : '' %>>Tanggal <%= d %> (Pukul 23:59 WIB)</option>
+                                <% } %>
+                            </select>
+                        </div>
+
+                        <!-- Penyesuaian Tagihan Lainnya / Tambahan -->
+                        <div class="col-12 mt-3 pt-3 border-top">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label fw-bold text-dark mb-0">
+                                    <i class="fas fa-file-invoice-dollar text-warning me-1"></i>Tagihan Tambahan / Tagihan Lainnya
+                                </label>
+                                <span class="badge bg-light text-muted border">Opsional</span>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <label for="additional_bill" class="form-label small text-muted">Nominal Tambahan (+) / Potongan (-)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" step="1000" class="form-control" id="additional_bill" name="additional_bill"
+                                               value="<%= mode === 'edit' ? (customer.additional_bill !== undefined && customer.additional_bill !== null ? customer.additional_bill : 0) : 0 %>"
+                                               placeholder="0 (misal: 50000 atau -20000)">
+                                    </div>
+                                    <div class="form-text" style="font-size: 0.72rem;">
+                                        Isi angka positif untuk <strong>biaya tambahan</strong> (misal <code>50000</code>) atau negatif untuk <strong>diskon/potongan</strong> (misal <code>-20000</code>).
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <label for="additional_bill_desc" class="form-label small text-muted">Keterangan / Alasan Tagihan Tambahan</label>
+                                    <input type="text" class="form-control" id="additional_bill_desc" name="additional_bill_desc"
+                                           value="<%= mode === 'edit' ? (customer.additional_bill_desc || '') : '' %>"
+                                           placeholder="Contoh: Kabel LAN 15 meter, Ganti adaptor, Kompensasi gangguan, dll">
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <div class="p-2 bg-light rounded border">
+                                        <div class="form-check form-switch mb-1">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="auto_reset_additional_bill" name="auto_reset_additional_bill" value="1"
+                                                   <%= mode === 'edit' ? (customer.auto_reset_additional_bill !== 0 ? 'checked' : '') : 'checked' %>>
+                                            <label class="form-check-label fw-bold text-dark small" for="auto_reset_additional_bill">
+                                                <i class="fas fa-undo-alt text-primary me-1"></i>Kosongkan otomatis tagihan tambahan saat tagihan dilunasi
+                                            </label>
+                                        </div>
+                                        <small class="text-muted d-block" style="font-size: 0.72rem;">
+                                            Jika diaktifkan, nominal tagihan tambahan akan otomatis kembali Rp 0 saat tagihan internet dilunasi. Jika dinonaktifkan, tagihan tambahan akan terus berulang setiap bulan.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perangkat -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="card-title fw-bold mb-0">
+                        <i class="fas fa-microchip text-info me-2"></i>Perangkat
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label for="onu_serial" class="form-label">ONU Serial Number (TR-069 GenieACS)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control font-monospace" id="onu_serial" name="onu_serial"
+                                       value="<%= mode === 'edit' ? (customer.onu_serial || '') : '' %>"
+                                       placeholder="GPON/EPON serial number (contoh: CIOT12C73898)">
+                                <% if (mode === 'edit' && customer.onu_serial) { %>
+                                    <a href="/genieacs" class="btn btn-outline-primary" title="Buka Manajemen ONT di GenieACS">
+                                        <i class="fas fa-microchip me-1"></i>Remote di GenieACS
+                                    </a>
+                                <% } %>
+                            </div>
+                            <div class="form-text small">Serial number ONT akan otomatis terintegrasi dengan GenieACS untuk remote ganti WiFi, reboot, dan monitoring optik.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Location -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="card-title fw-bold mb-0">
+                        <i class="fas fa-map-marker-alt text-danger me-2"></i>Lokasi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="latitude" class="form-label">Latitude</label>
+                        <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude"
+                               value="<%= mode === 'edit' ? (customer.latitude || '') : '' %>" placeholder="-6.200000">
+                    </div>
+                    <div class="mb-3">
+                        <label for="longitude" class="form-label">Longitude</label>
+                        <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude"
+                               value="<%= mode === 'edit' ? (customer.longitude || '') : '' %>" placeholder="106.816666">
+                    </div>
+                    <p class="text-muted small mb-2"><i class="fas fa-info-circle me-1"></i>Klik pada peta untuk menentukan lokasi</p>
+                    <div id="locationMap" style="height: 300px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <% if (mode === 'create') { %>
+                        <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="send_welcome_wa" name="send_welcome_wa" value="1" checked>
+                            <label class="form-check-label small fw-semibold text-success" for="send_welcome_wa">
+                                <i class="fab fa-whatsapp me-1"></i>Kirim WA Selamat Bergabung
+                            </label>
+                            <div class="text-muted" style="font-size: 0.72rem; margin-left: 28px;">
+                                Kirim pesan sambutan otomatis ke nomor WhatsApp pelanggan begitu disimpan.
+                            </div>
+                        </div>
+                    <% } %>
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-save me-2"></i><%= mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Pelanggan' %>
+                    </button>
+                    <% if (mode === 'edit' && customer && customer.phone) { %>
+                        <button type="button" class="btn btn-outline-success w-100 mb-2 btn-send-welcome-edit"
+                                data-id="<%= customer.id %>"
+                                data-name="<%= customer.name %>"
+                                data-phone="<%= customer.phone %>">
+                            <i class="fab fa-whatsapp me-2"></i>Kirim Ulang WA Selamat Bergabung
+                        </button>
+                    <% } %>
+                    <a href="/customers" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-times me-2"></i>Batal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Leaflet CSS & JS for location picker -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Connection type toggle (PPPoE vs Static IP)
+    const connPppoe = document.getElementById('connPppoe');
+    const connStatic = document.getElementById('connStatic');
+    const pppoeSection = document.getElementById('pppoeSection');
+    const staticSection = document.getElementById('staticSection');
+
+    function toggleConnType() {
+        if (connStatic && connStatic.checked) {
+            pppoeSection.style.display = 'none';
+            staticSection.style.display = 'flex';
+        } else {
+            pppoeSection.style.display = 'flex';
+            staticSection.style.display = 'none';
+        }
+    }
+
+    if (connPppoe && connStatic) {
+        connPppoe.addEventListener('change', toggleConnType);
+        connStatic.addEventListener('change', toggleConnType);
+        toggleConnType(); // Run initial state
+    }
+
+    // PPPoE password toggle
+    const toggleBtn = document.getElementById('togglePppoePass');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const input = document.getElementById('pppoe_password');
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+    }
+
+    // Location Map
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+    const defaultLat = parseFloat(latInput.value) || -6.2;
+    const defaultLng = parseFloat(lngInput.value) || 106.816666;
+    const hasCoords = latInput.value && lngInput.value;
+
+    const map = L.map('locationMap').setView([defaultLat, defaultLng], hasCoords ? 15 : 10);
+
+    // Base Tile Layers (Satelit Hybrid, Satelit Esri, & Peta Jalan)
+    const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+    });
+
+    const esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+    });
+
+    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+    });
+
+    // Default aktif: Satelit Hybrid
+    googleHybrid.addTo(map);
+
+    // Tombol switch layer di pojok kanan atas peta
+    const baseMaps = {
+        '🛰️ Satelit Hybrid': googleHybrid,
+        '🌍 Satelit Polos': esriSat,
+        '🗺️ Peta Jalan': esriStreet
+    };
+    L.control.layers(baseMaps).addTo(map);
+
+    let marker = null;
+
+    if (hasCoords) {
+        marker = L.marker([defaultLat, defaultLng]).addTo(map);
+    }
+
+    map.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng).addTo(map);
+        }
+    });
+
+    // Update marker when inputs change manually
+    function updateMarkerFromInputs() {
+        const lat = parseFloat(latInput.value);
+        const lng = parseFloat(lngInput.value);
+        if (!isNaN(lat) && !isNaN(lng)) {
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng]).addTo(map);
+            }
+            map.setView([lat, lng], 15);
+        }
+    }
+
+    latInput.addEventListener('change', updateMarkerFromInputs);
+    lngInput.addEventListener('change', updateMarkerFromInputs);
+
+    // Fix map rendering issue in tabs/hidden containers
+    setTimeout(function() { map.invalidateSize(); }, 300);
+
+    // Kirim Ulang WA Selamat Bergabung
+    const btnSendWelcome = document.querySelector('.btn-send-welcome-edit');
+    if (btnSendWelcome) {
+        btnSendWelcome.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            const phone = this.dataset.phone;
+
+            const executeSend = () => {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/customers/${id}/send-welcome`;
+                document.body.appendChild(form);
+                form.submit();
+            };
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Kirim WhatsApp Selamat Bergabung?',
+                    html: `Kirim pesan sambutan selamat bergabung ke nomor WhatsApp <strong>${phone}</strong> milik pelanggan <strong>${name}</strong>?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fab fa-whatsapp me-1"></i> Ya, Kirim Sekarang!',
+                    cancelButtonText: 'Batal'
+                }).then((res) => {
+                    if (res.isConfirmed) executeSend();
+                });
+            } else if (confirm(`Kirim WhatsApp Selamat Bergabung ke ${name} (${phone})?`)) {
+                executeSend();
+            }
+        });
+    }
+});
+</script>
+
+<%- include('partials/footer') %>

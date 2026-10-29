@@ -1,0 +1,1083 @@
+<%- include('partials/header', { title: 'Tagihan', activePage: 'billing' }) %>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="fw-bold mb-1">Tagihan</h4>
+        <p class="text-muted mb-0">Kelola tagihan dan pembayaran pelanggan</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-success fw-semibold shadow-sm" id="btnOpenPayAllModal">
+            <i class="fas fa-check-double me-2"></i>Lunasi Semua Tagihan
+        </button>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal">
+            <i class="fas fa-sync-alt me-2"></i>Generate Tagihan Bulanan
+        </button>
+        <button type="button" class="btn btn-whatsapp" data-bs-toggle="modal" data-bs-target="#bulkWaModal" id="btnOpenBulkWaModal">
+            <i class="fab fa-whatsapp me-2"></i>Kirim WA Massal
+        </button>
+    </div>
+</div>
+
+<!-- Filter Row -->
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body p-3">
+        <form method="GET" action="/billing" id="billingFilterForm">
+            <!-- Baris 1: Periode, Status, Nama Paket, Server MikroTik -->
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-xl-3 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="far fa-calendar-alt text-primary me-1"></i>Periode
+                    </label>
+                    <input type="month" class="form-control form-control-sm" name="period" value="<%= (typeof currentPeriod !== 'undefined' ? currentPeriod : '') %>">
+                </div>
+
+                <div class="col-xl-3 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="fas fa-info-circle text-info me-1"></i>Status Tagihan
+                    </label>
+                    <% const curStatusVal = (typeof currentStatus !== 'undefined' ? currentStatus : ''); %>
+                    <select class="form-select form-select-sm" name="status">
+                        <option value="" <%= !curStatusVal ? 'selected' : '' %>>Semua Status</option>
+                        <option value="unpaid" <%= curStatusVal === 'unpaid' ? 'selected' : '' %>>Belum Dibayar</option>
+                        <option value="paid" <%= curStatusVal === 'paid' ? 'selected' : '' %>>Sudah Dibayar</option>
+                        <option value="overdue" <%= curStatusVal === 'overdue' ? 'selected' : '' %>>Jatuh Tempo / Suspend</option>
+                    </select>
+                </div>
+
+                <div class="col-xl-3 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="fas fa-box text-warning me-1"></i>Nama Paket
+                    </label>
+                    <select class="form-select form-select-sm" name="package_id">
+                        <option value="">Semua Paket</option>
+                        <% if (typeof packages !== 'undefined' && packages.length > 0) { %>
+                            <% packages.forEach(pkg => { %>
+                                <option value="<%= pkg.id %>" <%= (typeof filters !== 'undefined' && filters.package_id == pkg.id) ? 'selected' : '' %>>
+                                    <%= pkg.name %>
+                                </option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+
+                <div class="col-xl-3 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="fas fa-server text-secondary me-1"></i>Server MikroTik
+                    </label>
+                    <select class="form-select form-select-sm" name="router_id">
+                        <option value="">Semua Router</option>
+                        <% if (typeof routers !== 'undefined' && routers.length > 0) { %>
+                            <% routers.forEach(router => { %>
+                                <option value="<%= router.id %>" <%= (typeof filters !== 'undefined' && filters.router_id == router.id) ? 'selected' : '' %>>
+                                    <%= router.name %>
+                                </option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Baris 2: Alamat, IP Address, dan Tombol Aksi -->
+            <div class="row g-2 align-items-end">
+                <div class="col-xl-5 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="fas fa-map-marker-alt text-danger me-1"></i>Alamat Pelanggan
+                    </label>
+                    <input type="text" class="form-control form-control-sm" name="address" 
+                           placeholder="Cari jalan / desa / RT / Kp..." value="<%= (typeof filters !== 'undefined' && filters.address) ? filters.address : '' %>">
+                </div>
+
+                <div class="col-xl-4 col-md-6 col-sm-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">
+                        <i class="fas fa-network-wired text-success me-1"></i>By IP Address
+                    </label>
+                    <input type="text" class="form-control form-control-sm font-monospace" name="ip" 
+                           placeholder="Contoh: 172.16... / 10..." value="<%= (typeof filters !== 'undefined' && filters.ip) ? filters.ip : '' %>">
+                </div>
+
+                <div class="col-xl-3 col-md-12 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1 fw-semibold">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <a href="/billing?period=all" class="btn btn-sm btn-outline-secondary" title="Tampilkan Semua Periode & Reset Filter">
+                        <i class="fas fa-undo me-1"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<% 
+const hasBillingFilter = (typeof filters !== 'undefined') && (filters.package_id || filters.router_id || filters.address || filters.ip || (filters.status && filters.status !== ''));
+%>
+<% if (hasBillingFilter) { %>
+    <div class="d-flex align-items-center justify-content-between p-2 mb-3 bg-light rounded border">
+        <div class="small text-muted">
+            <i class="fas fa-filter text-primary me-1"></i>
+            Menampilkan hasil filter: <strong><%= invoices ? invoices.length : 0 %></strong> tagihan ditemukan.
+        </div>
+        <a href="/billing?period=<%= currentPeriod || '' %>" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold" style="font-size: 0.8rem;">
+            <i class="fas fa-times me-1"></i>Bersihkan Filter Tambahan
+        </a>
+    </div>
+<% } %>
+
+<!-- Invoices Table -->
+<div class="card shadow-sm border-0">
+    <div class="card-body p-3 p-md-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle datatable w-100 mb-0" id="billingTable" data-order="[]" style="width: 100%;">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center text-nowrap" style="width: 45px;">No</th>
+                        <th class="text-nowrap" style="width: 140px;">No. Invoice</th>
+                        <th class="text-nowrap" style="min-width: 180px;">Pelanggan</th>
+                        <th class="text-center text-nowrap" style="width: 100px;">Periode</th>
+                        <th class="text-nowrap" style="min-width: 160px;">Jumlah</th>
+                        <th class="text-nowrap" style="width: 130px;">Jatuh Tempo</th>
+                        <th class="text-center text-nowrap" style="width: 110px;">Status</th>
+                        <th class="text-center text-nowrap" style="width: 50px;">WA</th>
+                        <th class="text-center text-nowrap" style="width: 150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (invoices && invoices.length > 0) { %>
+                        <% invoices.forEach(function(inv, index) { %>
+                        <tr>
+                            <td class="text-center text-muted fw-bold"><%= index + 1 %></td>
+                            <td class="text-nowrap">
+                                <span class="fw-bold text-primary font-monospace"><%= inv.invoice_number %></span>
+                            </td>
+                            <td>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark text-truncate" style="max-width: 180px;" title="<%= inv.customer_name %>"><%= inv.customer_name %></div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <small class="text-muted font-monospace"><%= inv.customer_id %></small>
+                                        <% if (inv.customer_address && inv.customer_address !== '-') { %>
+                                            <span class="text-muted">•</span>
+                                            <small class="text-muted text-truncate" style="max-width: 130px; font-size: 0.72rem;" title="<%= inv.customer_address %>">
+                                                <i class="fas fa-map-marker-alt text-danger me-1"></i><%= inv.customer_address %>
+                                            </small>
+                                        <% } %>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <% if (inv.ip_address) { %>
+                                            <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.68rem;" title="IP Address Pelanggan" data-bs-toggle="tooltip">
+                                                <i class="fas fa-network-wired me-1 text-info"></i><%= inv.ip_address %>
+                                            </span>
+                                        <% } %>
+                                        <% if (inv.router_name) { %>
+                                            <span class="badge bg-light text-secondary border" style="font-size: 0.68rem;" title="Router MikroTik" data-bs-toggle="tooltip">
+                                                <i class="fas fa-server me-1 text-primary"></i><%= inv.router_name %>
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <span class="badge bg-light text-dark border font-monospace px-2 py-1"><%= inv.period %></span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-dark">Rp <%= Number(inv.amount).toLocaleString('id-ID') %></span>
+                                    <% if (inv.notes) { %>
+                                        <div class="text-truncate text-muted" style="max-width: 170px; font-size: 0.72rem;" title="<%= inv.notes %>" data-bs-toggle="tooltip">
+                                            <i class="fas fa-info-circle text-warning me-1"></i><%= inv.notes %>
+                                        </div>
+                                    <% } else if (inv.package_name) { %>
+                                        <div class="text-muted text-truncate" style="max-width: 170px; font-size: 0.72rem;" title="<%= inv.package_name %>" data-bs-toggle="tooltip">
+                                            <i class="fas fa-box me-1 text-warning"></i><%= inv.package_name %>
+                                        </div>
+                                    <% } else { %>
+                                        <div class="text-muted" style="font-size: 0.72rem;">Tagihan Paket</div>
+                                    <% } %>
+                                </div>
+                            </td>
+                            <td class="text-nowrap">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-semibold text-dark small">
+                                        <i class="far fa-calendar-alt text-primary me-1"></i><%= new Date(inv.due_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.72rem;"><i class="far fa-clock me-1"></i>23:59 WIB</small>
+                                </div>
+                            </td>
+                            <% 
+                                const isPastDue = inv.status !== 'paid' && (inv.status === 'overdue' || (inv.due_date && todayDate && inv.due_date < todayDate) || inv.customer_status === 'suspended');
+                                const statusSortOrder = isPastDue ? 1 : (inv.status === 'paid' ? 3 : 2);
+                            %>
+                            <td class="text-center text-nowrap" data-order="<%= statusSortOrder %>">
+                                <% if (inv.status === 'paid') { %>
+                                    <span class="badge bg-success px-2 py-1"><i class="fas fa-check me-1"></i>Lunas</span>
+                                <% } else if (isPastDue) { %>
+                                    <span class="badge badge-blinking-danger px-2 py-1" title="Pelanggan terlewat jatuh tempo / status diisolir" data-bs-toggle="tooltip">
+                                        <i class="fas fa-ban me-1"></i>Suspend
+                                    </span>
+                                <% } else { %>
+                                    <span class="badge bg-warning text-dark px-2 py-1"><i class="fas fa-clock me-1"></i>Belum Bayar</span>
+                                <% } %>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <% const isParallelInv = inv.no_wa_billing === 1 || /exiting|existing|pararel|paralel/i.test(inv.package_name || ''); %>
+                                <% if (isParallelInv) { %>
+                                    <i class="fas fa-bell-slash text-muted" title="Paket Paralel: Bebas Notifikasi WA Tagihan" data-bs-toggle="tooltip"></i>
+                                <% } else if (inv.wa_sent) { %>
+                                    <i class="fas fa-check-circle text-success fs-6" title="WA Terkirim" data-bs-toggle="tooltip"></i>
+                                <% } else { %>
+                                    <i class="fas fa-times-circle text-muted fs-6" title="Belum Dikirim" data-bs-toggle="tooltip"></i>
+                                <% } %>
+                            </td>
+                            <td class="text-center text-nowrap">
+                                <div class="btn-group btn-group-sm">
+                                    <% if (inv.status !== 'paid') { %>
+                                    <button type="button" class="btn btn-outline-success btn-pay"
+                                            data-id="<%= inv.id %>"
+                                            data-amount="<%= inv.amount %>"
+                                            data-customer="<%= inv.customer_name %>"
+                                            data-invoice="<%= inv.invoice_number %>"
+                                            data-notes="<%= inv.notes || '' %>"
+                                            title="Bayar"
+                                            data-bs-toggle="tooltip">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </button>
+                                    <% } else { %>
+                                    <form action="/billing/<%= inv.id %>/reset-payment" method="POST" class="d-inline">
+                                        <button type="button" class="btn btn-outline-warning btn-reset-payment"
+                                                data-invoice="<%= inv.invoice_number %>"
+                                                data-customer="<%= inv.customer_name %>"
+                                                title="Reset Status ke Belum Lunas"
+                                                data-bs-toggle="tooltip">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
+                                    <% } %>
+                                    <% if (inv.status === 'paid') { %>
+                                    <form action="/billing/<%= inv.id %>/send-receipt" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-success" title="Kirim Ulang Bukti Bayar & PDF ke WhatsApp" data-bs-toggle="tooltip">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </button>
+                                    </form>
+                                    <% } else { %>
+                                        <% if (isParallelInv) { %>
+                                        <button type="button" class="btn btn-outline-secondary opacity-50" title="Paket Paralel: Bebas Notifikasi WA Tagihan" data-bs-toggle="tooltip">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </button>
+                                        <% } else { %>
+                                        <form action="/billing/<%= inv.id %>/send-whatsapp" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-success" title="Kirim WA Tagihan & Invoice PDF" data-bs-toggle="tooltip">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </button>
+                                        </form>
+                                        <% } %>
+                                    <% } %>
+                                    <a href="/billing/<%= inv.id %>" class="btn btn-outline-info" title="Detail" data-bs-toggle="tooltip">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/billing/<%= inv.id %>/print" target="_blank" class="btn btn-outline-secondary" title="Cetak Invoice" data-bs-toggle="tooltip">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1" aria-labelledby="generateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="generateModalLabel">
+                    <i class="fas fa-sync-alt text-success me-2"></i>Generate Tagihan Bulanan
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <form action="/billing/generate" method="POST" id="generateForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Generate tagihan otomatis untuk semua pelanggan aktif pada periode yang dipilih.
+                    </div>
+                    <div class="mb-3">
+                        <label for="generatePeriod" class="form-label">Periode Tagihan <span class="text-danger">*</span></label>
+                        <input type="month" class="form-control" id="generatePeriod" name="period" required
+                               value="<%= new Date().toISOString().slice(0, 7) %>">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-sync-alt me-2"></i>Generate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk WA Modal -->
+<div class="modal fade" id="bulkWaModal" tabindex="-1" aria-labelledby="bulkWaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="bulkWaModalLabel">
+                    <i class="fab fa-whatsapp text-success me-2"></i>Kirim WhatsApp Tagihan Massal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <form action="/billing/send-bulk-whatsapp" method="POST" id="bulkWaForm">
+                <div class="modal-body">
+                    <div class="alert alert-info small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Pesan pengingat tagihan akan dikirim secara berurutan dengan jeda 5 detik per nomor ke semua pelanggan aktif yang <b>belum lunas</b> (paket gratis/bypass otomatis dilewati).
+                    </div>
+                    <div class="mb-3">
+                        <label for="bulkWaPeriod" class="form-label fw-bold">Pilih Periode Tagihan <span class="text-danger">*</span></label>
+                        <input type="month" class="form-control" id="bulkWaPeriod" name="period" required
+                               value="<%= (typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'all') ? currentPeriod : new Date().toISOString().slice(0, 7) %>">
+                        <div class="form-text">Pilih bulan tagihan yang ingin dikirimi pengingat WhatsApp.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-whatsapp" id="btnSubmitBulkWa">
+                        <i class="fab fa-whatsapp me-2"></i>Kirim Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="paymentModalLabel">
+                    <i class="fas fa-money-bill-wave text-success me-2"></i>Pembayaran
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <form id="paymentForm" action="" method="POST">
+                <div class="modal-body">
+                    <div class="bg-light rounded p-3 mb-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Pelanggan</small>
+                                <p class="fw-bold mb-0" id="payCustomerName"></p>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">No. Invoice</small>
+                                <p class="fw-bold mb-0" id="payInvoiceNumber"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payAmount" class="form-label">Jumlah (Rp) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" class="form-control" id="payAmount" name="amount" required readonly>
+                        </div>
+                    </div>
+                    <div id="payNotesAlert" class="alert alert-warning py-2 px-3 small mb-3 d-none">
+                        <i class="fas fa-info-circle me-1 text-warning"></i>
+                        <strong>Rincian:</strong> <span id="payNotesText"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
+                        <select class="form-select" id="paymentMethod" name="payment_method" required autofocus>
+                            <option value="BCA" selected>BCA</option>
+                            <option value="BRI">BRI</option>
+                            <option value="DANA">DANA</option>
+                            <option value="QRIS">QRIS</option>
+                            <option value="SPay">SPay</option>
+                            <option value="Cash (Tunai)">Cash (Tunai)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payNotes" class="form-label">Catatan</label>
+                        <textarea class="form-control" id="payNotes" name="notes" rows="2" placeholder="Catatan pembayaran (opsional)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="receivedBy" class="form-label">Diterima Oleh</label>
+                        <input type="text" class="form-control" id="receivedBy" name="received_by"
+                               value="<%= typeof user !== 'undefined' && user ? (user.username || user.name) : 'admin' %>">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success" id="btnSubmitPayment">
+                        <i class="fas fa-check me-2"></i>Konfirmasi Pembayaran
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lunasi Semua Tagihan dengan Konfirmasi OTP WhatsApp Admin -->
+<div class="modal fade" id="payAllModal" tabindex="-1" aria-labelledby="payAllModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="payAllModalLabel">
+                    <i class="fas fa-check-double me-2"></i>Lunasi Semua Tagihan (Pelunasan Massal)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info Alert -->
+                <div class="alert alert-warning border-warning d-flex align-items-start mb-3">
+                    <i class="fas fa-exclamation-triangle fs-4 text-warning me-3 mt-1 flex-shrink-0"></i>
+                    <div class="small">
+                        <strong class="d-block mb-1">Perhatian Pelunasan Massal:</strong>
+                        <div>
+                            Fitur ini akan menandai seluruh tagihan berstatus belum lunas (unpaid) menjadi <strong>LUNAS</strong>.
+                        </div>
+                        <div class="mt-1">
+                            <span class="badge bg-danger me-1"><i class="fas fa-bell-slash me-1"></i>Tanpa WhatsApp Pelanggan</span>
+                            <strong>Tidak ada pemberitahuan / notifikasi WhatsApp</strong> yang akan dikirimkan ke pelanggan.
+                        </div>
+                        <div class="mt-1 text-muted">
+                            Isolir pelanggan pada MikroTik akan dibuka otomatis dan status pelanggan dipulihkan aktif jika tidak memiliki tunggakan lain.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope Selection & Summary Box -->
+                <div class="card border bg-light mb-3">
+                    <div class="card-body">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            <i class="far fa-calendar-alt me-1 text-primary"></i>Pilih Lingkup Periode Tagihan:
+                        </label>
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-6">
+                                <div class="form-check p-2 border rounded bg-white">
+                                    <input class="form-check-input ms-1" type="radio" name="payAllScope" id="payAllScopeCurrent" value="current" checked>
+                                    <label class="form-check-label ms-2 fw-semibold" for="payAllScopeCurrent">
+                                        Periode Saat Ini (<span id="payAllPeriodDisplay"><%= (typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'all') ? currentPeriod : '' %></span>)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-check p-2 border rounded bg-white">
+                                    <input class="form-check-input ms-1" type="radio" name="payAllScope" id="payAllScopeAll" value="all">
+                                    <label class="form-check-label ms-2 fw-semibold" for="payAllScopeAll">
+                                        Semua Periode (Semua Tunggakan)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Tagihan yang akan dilunasi -->
+                        <div class="p-3 bg-white border rounded-3 d-flex flex-wrap justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted text-uppercase fw-semibold d-block">Jumlah Tagihan Unpaid</small>
+                                <span class="fs-4 fw-bold text-dark" id="payAllCountDisplay">
+                                    <span class="spinner-border spinner-border-sm text-secondary me-1"></span>Memuat...
+                                </span>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted text-uppercase fw-semibold d-block">Total Nominal Tagihan</small>
+                                <span class="fs-4 fw-bold text-success" id="payAllAmountDisplay">
+                                    <span class="spinner-border spinner-border-sm text-secondary me-1"></span>Memuat...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opsi Metode Pembayaran & Catatan -->
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label for="payAllMethod" class="form-label fw-semibold">Metode Pembayaran</label>
+                        <select class="form-select" id="payAllMethod" name="payAllMethod">
+                            <option value="BCA" selected>Transfer Bank - BCA</option>
+                            <option value="BRI">Transfer Bank - BRI</option>
+                            <option value="Mandiri">Transfer Bank - Mandiri</option>
+                            <option value="cash">Tunai (Cash)</option>
+                            <option value="QRIS">QRIS</option>
+                            <option value="DANA">e-Wallet (DANA/OVO/GoPay)</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="payAllNotes" class="form-label fw-semibold">Catatan Pembayaran</label>
+                        <input type="text" class="form-control" id="payAllNotes" placeholder="Catatan pembayaran massal" value="Pelunasan massal oleh Admin">
+                    </div>
+                </div>
+
+                <!-- SECTION OTP VERIFICATION KE WHATSAPP ADMIN -->
+                <div class="border rounded-3 p-3 bg-white shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="fab fa-whatsapp text-success me-2 fs-5"></i>Verifikasi Kode OTP WhatsApp Admin
+                        </h6>
+                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                            <i class="fas fa-shield-alt me-1"></i>Otentikasi Keamanan
+                        </span>
+                    </div>
+
+                    <p class="small text-muted mb-3">
+                        Untuk keamanan, kode verifikasi OTP 6 digit akan dikirimkan ke nomor WhatsApp Admin:
+                        <strong class="text-dark font-monospace" id="payAllAdminPhoneDisplay">0822-4008-****</strong>.
+                        Klik tombol di bawah untuk meminta kode OTP.
+                    </p>
+
+                    <div class="row g-3 align-items-center">
+                        <div class="col-sm-6">
+                            <button type="button" class="btn btn-outline-success w-100 py-2 fw-semibold" id="btnRequestPayAllOtp">
+                                <i class="fab fa-whatsapp me-2"></i>Kirim Kode OTP via WhatsApp
+                            </button>
+                            <div class="small text-muted mt-1 text-center" id="otpCooldownText" style="display: none;">
+                                Tunggu <span id="otpCooldownTimer" class="fw-bold text-danger">60</span> detik untuk kirim ulang
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="fas fa-key"></i></span>
+                                <input type="text" class="form-control form-control-lg text-center font-monospace fw-bold" 
+                                       id="payAllOtpInput" placeholder="6 DIGIT OTP" maxlength="6" 
+                                       style="letter-spacing: 4px; font-size: 1.25rem;" autocomplete="off" disabled>
+                            </div>
+                            <div class="form-text small text-center" id="otpStatusHint">
+                                Minta kode OTP terlebih dahulu untuk mengaktifkan kolom input.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success px-4 fw-semibold" id="btnConfirmPayAll" disabled>
+                    <i class="fas fa-check-double me-2"></i>Konfirmasi & Lunasi Semua Tagihan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('paymentModal');
+    let paymentModalInstance = null;
+
+    // Delegated click handler untuk tombol Bayar (bekerja di semua baris DataTables)
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-pay');
+        if (!btn) return;
+        e.preventDefault();
+
+        const id = btn.getAttribute('data-id');
+        const amount = btn.getAttribute('data-amount');
+        const customer = btn.getAttribute('data-customer');
+        const invoice = btn.getAttribute('data-invoice');
+
+        const form = document.getElementById('paymentForm');
+        if (form) form.action = '/billing/' + id + '/pay';
+
+        const payAmount = document.getElementById('payAmount');
+        if (payAmount) payAmount.value = amount;
+
+        const payCust = document.getElementById('payCustomerName');
+        if (payCust) payCust.textContent = customer;
+
+        const payInv = document.getElementById('payInvoiceNumber');
+        if (payInv) payInv.textContent = invoice;
+
+        const notes = btn.getAttribute('data-notes');
+        const notesAlert = document.getElementById('payNotesAlert');
+        const notesText = document.getElementById('payNotesText');
+        if (notesAlert && notesText) {
+            if (notes && notes.trim() !== '') {
+                notesText.textContent = notes;
+                notesAlert.classList.remove('d-none');
+            } else {
+                notesAlert.classList.add('d-none');
+            }
+        }
+
+        const payMethod = document.getElementById('paymentMethod');
+        if (payMethod) payMethod.value = 'BCA';
+
+        const submitBtn = document.getElementById('btnSubmitPayment');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Konfirmasi Pembayaran';
+        }
+
+        paymentFormConfirmed = false;
+        if (typeof bootstrap !== 'undefined' && modalEl) {
+            if (!paymentModalInstance) {
+                paymentModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            }
+            paymentModalInstance.show();
+        }
+    });
+
+    // Autofocus pada Metode Pembayaran (BCA) saat modal terbuka
+    if (modalEl) {
+        modalEl.addEventListener('shown.bs.modal', function() {
+            const payMethod = document.getElementById('paymentMethod');
+            if (payMethod) {
+                payMethod.value = 'BCA';
+                payMethod.focus();
+                setTimeout(function() {
+                    payMethod.focus();
+                }, 50);
+            }
+        });
+    }
+
+    // Pop up konfirmasi persetujuan Iya / Tidak sebelum mengeksekusi pembayaran
+    let paymentFormConfirmed = false;
+    const paymentForm = document.getElementById('paymentForm');
+
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', function(e) {
+            if (paymentFormConfirmed) {
+                // Sudah disetujui, biarkan submit berjalan
+                const submitBtn = document.getElementById('btnSubmitPayment');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan Pembayaran...';
+                }
+                return true;
+            }
+
+            e.preventDefault();
+
+            const payCust = document.getElementById('payCustomerName')?.textContent || '-';
+            const payInv = document.getElementById('payInvoiceNumber')?.textContent || '-';
+            const rawAmount = document.getElementById('payAmount')?.value || '0';
+            const payMethod = document.getElementById('paymentMethod')?.value || 'BCA';
+            const formattedAmount = 'Rp ' + new Intl.NumberFormat('id-ID').format(rawAmount);
+
+            const confirmHtml = `
+                <div class="text-start p-3 bg-light rounded-3 border mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Pelanggan:</span>
+                        <strong class="text-dark">${payCust}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">No. Invoice:</span>
+                        <span class="badge bg-light text-primary border font-monospace">${payInv}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Metode:</span>
+                        <span class="badge bg-primary px-2 py-1">${payMethod}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-2">
+                        <span class="text-muted small">Total Tagihan:</span>
+                        <span class="fw-bold text-success fs-5">${formattedAmount}</span>
+                    </div>
+                </div>
+                <p class="mb-0 text-muted" style="font-size: 0.95rem;">
+                    Apakah Anda yakin ingin memproses dan mengonfirmasi pembayaran ini?
+                </p>
+            `;
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Konfirmasi Pembayaran',
+                    html: confirmHtml,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-check me-1"></i>Iya',
+                    cancelButtonText: '<i class="fas fa-times me-1"></i>Tidak',
+                    reverseButtons: true,
+                    focusConfirm: true
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        paymentFormConfirmed = true;
+                        const submitBtn = document.getElementById('btnSubmitPayment');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Menyimpan Pembayaran...';
+                        }
+                        paymentForm.submit();
+                    }
+                });
+            } else {
+                if (confirm(`Konfirmasi pembayaran ${payInv} (${payCust}) sebesar ${formattedAmount} via ${payMethod}?`)) {
+                    paymentFormConfirmed = true;
+                    paymentForm.submit();
+                }
+            }
+        });
+    }
+
+    // Delegated click handler untuk tombol Reset Pembayaran
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-reset-payment');
+        if (!btn) return;
+        e.preventDefault();
+
+        const form = btn.closest('form');
+        const invoice = btn.getAttribute('data-invoice');
+        const customer = btn.getAttribute('data-customer');
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Reset Status Pembayaran?',
+                text: `Ubah status tagihan ${invoice} (${customer}) kembali menjadi Belum Lunas? Jika tagihan ini memiliki tagihan tambahan, nominalnya akan otomatis dikembalikan ke data pelanggan.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Reset Status',
+                cancelButtonText: 'Batal'
+            }).then(function(result) {
+                if (result.isConfirmed && form) {
+                    form.submit();
+                }
+            });
+        } else if (confirm(`Ubah status tagihan ${invoice} kembali menjadi Belum Lunas?`)) {
+            if (form) form.submit();
+        }
+    });
+
+    // Loading indikator saat kirim WA massal
+    document.addEventListener('submit', function(e) {
+        if (e.target && e.target.id === 'bulkWaForm') {
+            const submitBtn = document.getElementById('btnSubmitBulkWa');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Mengirim WhatsApp...';
+            }
+        }
+    });
+
+    // =========================================================================
+    // FITUR LUNASI SEMUA TAGIHAN DENGAN OTP WHATSAPP KE ADMIN
+    // =========================================================================
+    const btnOpenPayAll = document.getElementById('btnOpenPayAllModal');
+    const payAllModalEl = document.getElementById('payAllModal');
+    let payAllModalInstance = null;
+    let payAllCooldownInterval = null;
+
+    function getSelectedScopePeriod() {
+        const isCurrent = document.getElementById('payAllScopeCurrent')?.checked;
+        if (isCurrent) {
+            const currentPeriodVal = "<%= (typeof currentPeriod !== 'undefined' && currentPeriod && currentPeriod !== 'all') ? currentPeriod : '' %>";
+            if (currentPeriodVal) return currentPeriodVal;
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
+        return 'all';
+    }
+
+    async function loadPayAllSummary() {
+        const countDisplay = document.getElementById('payAllCountDisplay');
+        const amountDisplay = document.getElementById('payAllAmountDisplay');
+        const adminPhoneDisplay = document.getElementById('payAllAdminPhoneDisplay');
+        const btnRequestOtp = document.getElementById('btnRequestPayAllOtp');
+        const btnConfirm = document.getElementById('btnConfirmPayAll');
+        const periodDisplay = document.getElementById('payAllPeriodDisplay');
+
+        const period = getSelectedScopePeriod();
+        if (periodDisplay) {
+            periodDisplay.textContent = (period === 'all') ? 'Semua Periode' : period;
+        }
+
+        if (countDisplay) countDisplay.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary me-1"></span>Memuat...';
+        if (amountDisplay) amountDisplay.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary me-1"></span>Memuat...';
+
+        try {
+            const resp = await fetch('/billing/pay-all/info?period=' + encodeURIComponent(period));
+            const data = await resp.json();
+            if (data.success) {
+                if (countDisplay) countDisplay.textContent = (data.count || 0) + ' Tagihan';
+                if (amountDisplay) amountDisplay.textContent = data.formatted_amount || 'Rp 0';
+                if (adminPhoneDisplay && data.admin_phone_masked) {
+                    adminPhoneDisplay.textContent = data.admin_phone_masked;
+                }
+
+                if (data.count === 0) {
+                    if (btnRequestOtp) btnRequestOtp.disabled = true;
+                    if (btnConfirm) btnConfirm.disabled = true;
+                    if (countDisplay) countDisplay.innerHTML = '<span class="text-muted fs-6">0 Tagihan (Tidak ada tunggakan)</span>';
+                } else {
+                    if (btnRequestOtp && !payAllCooldownInterval) btnRequestOtp.disabled = false;
+                }
+            } else {
+                if (countDisplay) countDisplay.textContent = '-';
+                if (amountDisplay) amountDisplay.textContent = '-';
+            }
+        } catch (e) {
+            console.error('Error load pay-all info:', e);
+            if (countDisplay) countDisplay.textContent = 'Gagal memuat';
+            if (amountDisplay) amountDisplay.textContent = 'Gagal memuat';
+        }
+    }
+
+    if (btnOpenPayAll && payAllModalEl) {
+        btnOpenPayAll.addEventListener('click', function() {
+            if (typeof bootstrap !== 'undefined') {
+                if (!payAllModalInstance) {
+                    payAllModalInstance = bootstrap.Modal.getOrCreateInstance(payAllModalEl);
+                }
+                payAllModalInstance.show();
+            }
+            loadPayAllSummary();
+        });
+
+        // Event listener saat radio scope berubah
+        const radioCurrent = document.getElementById('payAllScopeCurrent');
+        const radioAll = document.getElementById('payAllScopeAll');
+        if (radioCurrent) radioCurrent.addEventListener('change', loadPayAllSummary);
+        if (radioAll) radioAll.addEventListener('change', loadPayAllSummary);
+
+        // Minta OTP via WhatsApp
+        const btnRequestOtp = document.getElementById('btnRequestPayAllOtp');
+        const otpInput = document.getElementById('payAllOtpInput');
+        const otpStatusHint = document.getElementById('otpStatusHint');
+        const cooldownText = document.getElementById('otpCooldownText');
+        const cooldownTimer = document.getElementById('otpCooldownTimer');
+
+        if (btnRequestOtp) {
+            btnRequestOtp.addEventListener('click', async function() {
+                btnRequestOtp.disabled = true;
+                btnRequestOtp.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengirim OTP ke WA...';
+
+                try {
+                    const resp = await fetch('/billing/pay-all/request-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const resData = await resp.json();
+
+                    if (resData.success) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'OTP Terkirim!',
+                                text: resData.message || 'Kode OTP telah dikirim ke WhatsApp Admin.',
+                                timer: 3000,
+                                showConfirmButton: false
+                            });
+                        }
+
+                        if (otpInput) {
+                            otpInput.disabled = false;
+                            otpInput.value = '';
+                            otpInput.focus();
+                        }
+                        if (otpStatusHint) {
+                            otpStatusHint.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Kode OTP 6-digit terkirim ke WhatsApp Admin. Berlaku 5 menit.</span>';
+                        }
+
+                        // Cooldown countdown
+                        let timeLeft = resData.cooldownSec || 60;
+                        if (cooldownText && cooldownTimer) {
+                            cooldownText.style.display = 'block';
+                            cooldownTimer.textContent = timeLeft;
+                        }
+
+                        if (payAllCooldownInterval) clearInterval(payAllCooldownInterval);
+                        payAllCooldownInterval = setInterval(function() {
+                            timeLeft -= 1;
+                            if (cooldownTimer) cooldownTimer.textContent = timeLeft;
+                            if (timeLeft <= 0) {
+                                clearInterval(payAllCooldownInterval);
+                                payAllCooldownInterval = null;
+                                btnRequestOtp.disabled = false;
+                                btnRequestOtp.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Kirim Ulang Kode OTP';
+                                if (cooldownText) cooldownText.style.display = 'none';
+                            }
+                        }, 1000);
+
+                    } else {
+                        btnRequestOtp.disabled = false;
+                        btnRequestOtp.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Kirim Kode OTP via WhatsApp';
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal Kirim OTP',
+                                text: resData.message || 'Gagal mengirimkan kode OTP ke WhatsApp Admin.'
+                            });
+                        } else {
+                            alert(resData.message || 'Gagal mengirim OTP');
+                        }
+                    }
+                } catch (err) {
+                    btnRequestOtp.disabled = false;
+                    btnRequestOtp.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Kirim Kode OTP via WhatsApp';
+                    console.error('Request OTP error:', err);
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Kesalahan Sistem',
+                            text: 'Gagal menghubungi server: ' + err.message
+                        });
+                    }
+                }
+            });
+        }
+
+        // Input 6 digit OTP filter dan validasi auto-enable
+        const btnConfirm = document.getElementById('btnConfirmPayAll');
+        if (otpInput) {
+            otpInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+                if (btnConfirm) {
+                    btnConfirm.disabled = (this.value.length !== 6);
+                }
+            });
+        }
+
+        // Eksekusi Konfirmasi Pelunasan Massal
+        if (btnConfirm) {
+            btnConfirm.addEventListener('click', async function() {
+                const otpVal = otpInput?.value?.trim() || '';
+                if (otpVal.length !== 6) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Masukkan 6 digit kode OTP yang diterima di WhatsApp Admin.' });
+                    }
+                    return;
+                }
+
+                const countTxt = document.getElementById('payAllCountDisplay')?.textContent || '';
+                const amountTxt = document.getElementById('payAllAmountDisplay')?.textContent || '';
+                const methodVal = document.getElementById('payAllMethod')?.value || 'BCA';
+                const notesVal = document.getElementById('payAllNotes')?.value || 'Pelunasan massal oleh Admin';
+                const periodVal = getSelectedScopePeriod();
+
+                const confirmHtml = `
+                    <div class="text-start p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Cakupan Tagihan:</span>
+                            <strong class="text-dark">${periodVal === 'all' ? 'Semua Periode' : 'Periode ' + periodVal}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Jumlah Tagihan:</span>
+                            <span class="badge bg-primary px-2 py-1">${countTxt}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Metode Pembayaran:</span>
+                            <span class="badge bg-secondary px-2 py-1">${methodVal}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center border-top pt-2">
+                            <span class="text-muted small">Total Nominal:</span>
+                            <span class="fw-bold text-success fs-5">${amountTxt}</span>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 small text-start mb-0">
+                        <i class="fas fa-bell-slash me-1"></i>
+                        Pelunasan ini diproses <strong>tanpa pemberitahuan WhatsApp ke pelanggan</strong>.
+                    </div>
+                `;
+
+                const doExecution = async () => {
+                    btnConfirm.disabled = true;
+                    btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Memproses Pelunasan...';
+
+                    try {
+                        const resp = await fetch('/billing/pay-all/confirm', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                otp: otpVal,
+                                period: periodVal,
+                                payment_method: methodVal,
+                                notes: notesVal
+                            })
+                        });
+                        const resJson = await resp.json();
+
+                        if (resJson.success) {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Pelunasan Berhasil!',
+                                    text: resJson.message || 'Seluruh tagihan berhasil dilunasi.',
+                                    confirmButtonText: 'OK'
+                                }).then(function() {
+                                    window.location.reload();
+                                });
+                            } else {
+                                alert(resJson.message || 'Berhasil dilunasi');
+                                window.location.reload();
+                            }
+                        } else {
+                            btnConfirm.disabled = false;
+                            btnConfirm.innerHTML = '<i class="fas fa-check-double me-2"></i>Konfirmasi & Lunasi Semua Tagihan';
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Pelunasan Gagal',
+                                    text: resJson.message || 'Gagal memproses pelunasan.'
+                                });
+                            } else {
+                                alert(resJson.message || 'Gagal');
+                            }
+                        }
+                    } catch (e) {
+                        btnConfirm.disabled = false;
+                        btnConfirm.innerHTML = '<i class="fas fa-check-double me-2"></i>Konfirmasi & Lunasi Semua Tagihan';
+                        console.error('Confirm pay-all error:', e);
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Kesalahan Sistem',
+                                text: 'Gagal menghubungi server: ' + e.message
+                            });
+                        }
+                    }
+                };
+
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Konfirmasi Pelunasan Massal?',
+                        html: confirmHtml,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-check-double me-1"></i>Ya, Lunasi Sekarang',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            doExecution();
+                        }
+                    });
+                } else if (confirm(`Lunasi seluruh tagihan (${countTxt}) sebesar ${amountTxt}?`)) {
+                    doExecution();
+                }
+            });
+        }
+    }
+
+    // Inisialisasi Tooltip Bootstrap (mendukung paging & search DataTables)
+    function initBillingTooltips() {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const list = document.querySelectorAll('#billingTable [data-bs-toggle="tooltip"]');
+            list.forEach(function(el) {
+                if (!bootstrap.Tooltip.getInstance(el)) {
+                    new bootstrap.Tooltip(el);
+                }
+            });
+        }
+    }
+    initBillingTooltips();
+    if (window.jQuery) {
+        $(document).on('draw.dt', '#billingTable', function() {
+            initBillingTooltips();
+        });
+    }
+});
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,273 @@
+<%- include('partials/header', { title: `Track Tiket ${ticket.ticket_number}`, activePage: 'portal' }) %>
+
+<!-- Header Navigasi -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div class="d-flex align-items-center gap-2">
+        <a href="/portal" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali ke Daftar Tiket
+        </a>
+        <div>
+            <h4 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                <span><%= ticket.ticket_number %></span>
+                <% if (ticket.status === 'open') { %>
+                    <span class="badge bg-danger fs-6">1. MENUNGGU TEKNISI</span>
+                <% } else if (ticket.status === 'accepted') { %>
+                    <span class="badge bg-info text-dark fs-6">2. DITERIMA TEKNISI</span>
+                <% } else if (ticket.status === 'in_progress') { %>
+                    <span class="badge bg-warning text-dark fs-6">3. SEDANG DITANGANI</span>
+                <% } else { %>
+                    <span class="badge bg-success fs-6">4. GANGGUAN SELESAI</span>
+                <% } %>
+            </h4>
+            <small class="text-muted">Dilaporkan pada <%= moment(ticket.created_at).format('DD MMMM YYYY HH:mm') %> WIB</small>
+        </div>
+    </div>
+</div>
+
+<!-- Live Progress Tracker (4 Tahap) -->
+<%
+    const stepOrder = { 'open': 1, 'accepted': 2, 'in_progress': 3, 'resolved': 4 };
+    const currentStep = stepOrder[ticket.status] || 1;
+%>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="fw-bold mb-0"><i class="fas fa-route text-success me-2"></i>Status & Track Progress Penanganan Gangguan</h6>
+    </div>
+    <div class="card-body py-3 px-4">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 1 ? 'border-danger bg-danger bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 1 ? 'text-danger' : 'text-muted' %>">
+                        <i class="fas fa-bell me-1"></i>1. Laporan Masuk
+                    </div>
+                    <small class="text-muted d-block mt-1"><%= moment(ticket.created_at).format('DD/MM/YY HH:mm') %></small>
+                    <small class="d-block text-secondary mt-1" style="font-size: 0.72rem;">Tiket diteruskan ke WA Teknisi</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 2 ? 'border-info bg-info bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 2 ? 'text-info' : 'text-muted' %>">
+                        <i class="fas fa-user-check me-1"></i>2. Diterima Teknisi
+                    </div>
+                    <small class="text-muted d-block mt-1"><%= ticket.accepted_at ? moment(ticket.accepted_at).format('DD/MM/YY HH:mm') : 'Menunggu' %></small>
+                    <small class="d-block text-secondary mt-1" style="font-size: 0.72rem;"><%= ticket.technician_name || 'Tim Teknisi' %></small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 3 ? 'border-warning bg-warning bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 3 ? 'text-warning' : 'text-muted' %>">
+                        <i class="fas fa-tools me-1"></i>3. Sedang Ditangani
+                    </div>
+                    <small class="text-muted d-block mt-1"><%= ticket.in_progress_at ? moment(ticket.in_progress_at).format('DD/MM/YY HH:mm') : 'Menunggu' %></small>
+                    <small class="d-block text-secondary mt-1" style="font-size: 0.72rem;">Perbaikan di lapangan</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-3 rounded-3 border h-100 <%= currentStep >= 4 ? 'border-success bg-success bg-opacity-10' : 'bg-light' %>">
+                    <div class="fw-bold <%= currentStep >= 4 ? 'text-success' : 'text-muted' %>">
+                        <i class="fas fa-check-circle me-1"></i>4. Selesai
+                    </div>
+                    <small class="text-muted d-block mt-1"><%= ticket.resolved_at ? moment(ticket.resolved_at).format('DD/MM/YY HH:mm') : 'Belum selesai' %></small>
+                    <small class="d-block text-secondary mt-1" style="font-size: 0.72rem;">Koneksi normal kembali</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Kolom Kiri: Kolom Chat / Catatan Komunikasi dengan Teknisi -->
+    <div class="col-lg-6" id="chat-section">
+        <div class="card border-0 shadow-sm h-100 d-flex flex-column">
+            <div class="card-header bg-success text-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-bold mb-0"><i class="fas fa-comments me-2"></i>Chat & Catatan Komunikasi dengan Teknisi</h6>
+                    <small class="opacity-75">Teknisi Bertugas: <strong><%= ticket.technician_name || 'Tim Teknisi' %></strong></small>
+                </div>
+                <span class="badge bg-white text-success" id="chatCountBadge"><%= chatMessages.length %> Pesan</span>
+            </div>
+
+            <!-- Area Bubble Chat -->
+            <div class="card-body p-3" id="chatBoxContainer" style="height: 400px; overflow-y: auto; background: #f0fdf4;">
+                <% if (chatMessages.length === 0) { %>
+                    <div class="text-center text-muted py-5" id="emptyChatNotice">
+                        <i class="far fa-comment-dots fa-3x mb-2 opacity-25"></i>
+                        <p class="small mb-0">Belum ada percakapan. Tulis pesan atau catatan di bawah untuk berkomunikasi langsung dengan teknisi.</p>
+                    </div>
+                <% } else { %>
+                    <% chatMessages.forEach(msg => { 
+                        const isMe = (msg.sender_role === 'customer');
+                    %>
+                    <div class="d-flex flex-column <%= isMe ? 'align-items-end' : 'align-items-start' %> mb-3">
+                        <div class="p-3 rounded-3 shadow-xs"
+                             style="max-width: 84%; <%= isMe ? 'background: #dcfce7; border: 1px solid #bbf7d0; color: #14532d;' : 'background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b;' %>">
+                            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
+                                <span class="fw-bold small <%= isMe ? 'text-success' : 'text-primary' %>">
+                                    <% if (isMe) { %>
+                                        <i class="fas fa-user me-1"></i>Anda (<%= msg.sender_name %>)
+                                    <% } else { %>
+                                        <i class="fas fa-user-cog me-1"></i><%= msg.sender_name %>
+                                        <span class="badge bg-primary ms-1" style="font-size: 0.62rem;">TEKNISI</span>
+                                    <% } %>
+                                </span>
+                                <small class="text-muted" style="font-size: 0.68rem;"><%= moment(msg.created_at).format('DD/MM HH:mm') %></small>
+                            </div>
+                            <div class="small" style="white-space: pre-line;"><%= msg.message %></div>
+                            <% if (msg.photo_path) { %>
+                                <div class="mt-2">
+                                    <img src="<%= msg.photo_path %>" alt="Lampiran Chat"
+                                         class="img-fluid rounded border"
+                                         style="max-height: 160px; cursor: pointer;"
+                                         onclick="previewPortalPhoto('<%= msg.photo_path %>', 'Lampiran Chat')">
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% }) %>
+                <% } %>
+            </div>
+
+            <!-- Form Kirim Pesan / Catatan ke Teknisi -->
+            <div class="card-footer bg-white p-3 border-top">
+                <form action="/portal/tickets/<%= ticket.id %>/chat" method="POST" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <textarea name="message" class="form-control" rows="2" placeholder="Tulis pesan / catatan untuk teknisi (contoh: Rumah pagar warna hitam dekat masjid, atau kondisi lampu modem saat ini)..." required></textarea>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="btn btn-sm btn-outline-secondary mb-0" title="Lampirkan Foto">
+                                <i class="fas fa-camera me-1"></i>Lampirkan Foto
+                                <input type="file" name="photo" accept="image/*" class="d-none" onchange="document.getElementById('chatFileName').textContent = this.files[0] ? this.files[0].name : ''">
+                            </label>
+                            <small id="chatFileName" class="text-muted text-truncate" style="max-width: 150px;"></small>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm fw-bold px-4">
+                            <i class="fas fa-paper-plane me-1"></i>Kirim ke Teknisi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom Kanan: Detail Keluhan, Timeline Pengerjaan & Foto Dokumentasi -->
+    <div class="col-lg-6">
+        <!-- Ringkasan Laporan -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="fas fa-info-circle text-primary me-2"></i>Informasi Tiket Gangguan</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 small mb-2">
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Kategori Gangguan:</span>
+                        <strong class="text-danger"><%= ticket.category %></strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted d-block">Teknisi Bertugas:</span>
+                        <strong class="text-dark"><i class="fas fa-user-cog text-primary me-1"></i><%= ticket.technician_name || 'Tim Teknisi' %></strong>
+                    </div>
+                </div>
+                <div class="p-2 bg-light rounded border small mb-2">
+                    <strong class="d-block text-dark">Keluhan Awal:</strong>
+                    <%= ticket.description %>
+                </div>
+                <% if (ticket.resolution_notes && ticket.status === 'resolved') { %>
+                <div class="p-2 bg-success bg-opacity-10 border border-success rounded small text-dark">
+                    <strong class="text-success d-block"><i class="fas fa-check-circle me-1"></i>Hasil Perbaikan / Solusi Teknisi:</strong>
+                    <%= ticket.resolution_notes %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Timeline Progress Pengerjaan -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="fas fa-history text-primary me-2"></i>Riwayat Progress Pengerjaan Teknisi</h6>
+                <span class="badge bg-primary rounded-pill"><%= logs.length %> Tahap</span>
+            </div>
+            <div class="card-body">
+                <div class="position-relative ps-4 border-start border-2 border-primary ms-2">
+                    <% logs.forEach(log => { 
+                        const logPhotos = photosByLog[log.id] || [];
+                        let dotColor = 'bg-primary';
+                        if (log.status === 'open') dotColor = 'bg-danger';
+                        else if (log.status === 'accepted') dotColor = 'bg-info';
+                        else if (log.status === 'in_progress') dotColor = 'bg-warning';
+                        else if (log.status === 'resolved') dotColor = 'bg-success';
+                    %>
+                    <div class="mb-3 position-relative">
+                        <span class="position-absolute top-0 start-0 translate-middle rounded-circle <%= dotColor %> border border-2 border-white shadow-sm"
+                              style="width: 14px; height: 14px; margin-left: -25px; margin-top: 10px;"></span>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small"><%= log.title %></span>
+                                <small class="text-muted" style="font-size: 0.72rem;">
+                                    <%= moment(log.created_at).format('DD/MM/YYYY HH:mm') %>
+                                </small>
+                            </div>
+                            <p class="small text-secondary mb-2" style="white-space: pre-line;"><%= log.description %></p>
+
+                            <% if (logPhotos.length > 0) { %>
+                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                    <% logPhotos.forEach(ph => { %>
+                                        <img src="<%= ph.file_path %>" alt="<%= ph.caption %>"
+                                             class="rounded border shadow-xs"
+                                             style="width: 75px; height: 75px; object-fit: cover; cursor: pointer;"
+                                             onclick="previewPortalPhoto('<%= ph.file_path %>', '<%= (ph.caption || log.title).replace(/'/g, '') %>')">
+                                    <% }) %>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Preview Foto -->
+<div class="modal fade" id="modalPortalPhoto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg bg-dark text-white">
+            <div class="modal-header border-secondary py-2">
+                <h6 class="modal-title fw-bold" id="portalPhotoTitle">Foto Dokumentasi</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-2" style="background: #0f172a;">
+                <img src="" id="portalPhotoImg" alt="Preview" class="img-fluid rounded" style="max-height: 75vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Scroll otomatis ke pesan chat paling bawah
+    const chatContainer = document.getElementById('chatBoxContainer');
+    if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function previewPortalPhoto(src, title) {
+        document.getElementById('portalPhotoImg').src = src;
+        document.getElementById('portalPhotoTitle').textContent = title || 'Foto Dokumentasi';
+        new bootstrap.Modal(document.getElementById('modalPortalPhoto')).show();
+    }
+
+    // Polling ringan setiap 6 detik untuk mengecek balasan chat baru dari teknisi
+    let currentMsgCount = <%= chatMessages.length %>;
+    setInterval(async () => {
+        try {
+            const res = await fetch('/portal/tickets/<%= ticket.id %>/messages');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.messages && data.messages.length > currentMsgCount) {
+                window.location.reload();
+            }
+        } catch (e) {}
+    }, 6000);
+</script>
+
+<%- include('partials/footer') %>
