@@ -115,7 +115,10 @@ router.post('/login', async (req, res) => {
                 .run('login', `Administrator ${user.name} berhasil login`, user.id);
 
             req.flash('success', `Selamat datang kembali, ${user.name}!`);
-            return res.redirect('/dashboard');
+            return req.session.save((err) => {
+                if (err) console.error('Session save error:', err);
+                res.redirect('/dashboard');
+            });
         }
 
         // =========================================================================
@@ -162,7 +165,10 @@ router.post('/login', async (req, res) => {
                     .run('login_technician', `Teknisi ${tech.name} berhasil masuk ke Portal Teknisi`, tech.id);
 
                 req.flash('success', `Selamat bertugas, ${tech.name}!`);
-                return res.redirect('/tickets');
+                return req.session.save((err) => {
+                    if (err) console.error('Session save error:', err);
+                    res.redirect('/tickets');
+                });
             }
 
             // Cek juga apakah ada user di tabel users yang khusus ber-role 'technician'
@@ -186,7 +192,10 @@ router.post('/login', async (req, res) => {
                     .run('login_technician', `Teknisi ${techUser.name} berhasil masuk ke Portal Teknisi`, techUser.id);
 
                 req.flash('success', `Selamat bertugas, ${techUser.name}!`);
-                return res.redirect('/tickets');
+                return req.session.save((err) => {
+                    if (err) console.error('Session save error:', err);
+                    res.redirect('/tickets');
+                });
             }
 
             req.flash('error', 'Akses ditolak! Halaman ini khusus untuk Login Teknisi Lapangan.');

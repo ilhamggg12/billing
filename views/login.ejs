@@ -243,8 +243,29 @@
                 </div>
                 <% } %>
 
-    
             </div>
+
+            <!-- Pesan Notifikasi Flash Error / Success (Bekerja offline tanpa bergantung CDN) -->
+            <% if (typeof messages !== 'undefined' && messages) { %>
+                <% if (messages.error && messages.error.length > 0) { %>
+                    <div class="alert alert-danger py-2 px-3 small mb-3 rounded-3 d-flex align-items-center shadow-sm">
+                        <i class="fas fa-exclamation-circle me-2 flex-shrink-0 text-danger fa-lg"></i>
+                        <div><strong>Gagal:</strong> <%= messages.error[0] %></div>
+                    </div>
+                <% } %>
+                <% if (messages.warning && messages.warning.length > 0) { %>
+                    <div class="alert alert-warning py-2 px-3 small mb-3 rounded-3 d-flex align-items-center shadow-sm">
+                        <i class="fas fa-exclamation-triangle me-2 flex-shrink-0 text-warning fa-lg"></i>
+                        <div><strong>Perhatian:</strong> <%= messages.warning[0] %></div>
+                    </div>
+                <% } %>
+                <% if (messages.success && messages.success.length > 0) { %>
+                    <div class="alert alert-success py-2 px-3 small mb-3 rounded-3 d-flex align-items-center shadow-sm">
+                        <i class="fas fa-check-circle me-2 flex-shrink-0 text-success fa-lg"></i>
+                        <div><strong>Berhasil:</strong> <%= messages.success[0] %></div>
+                    </div>
+                <% } %>
+            <% } %>
 
             <% if (currentMode === 'pelanggan') { %>
             <!-- ================= LOGIN PELANGGAN: NOMOR WHATSAPP + OTP ================= -->
